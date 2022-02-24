@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/auth_user.context';
  *
  */
 const IndexPage: NextPage = function () {
-  const { signInWithGoogle, signInWithTwitter } = useAuth();
+  const { signInWithTwitter } = useAuth();
   return (
     <ServiceLayout height="100vh" backgroundColor="gray.50">
       <Box maxW="md" mx="auto">
@@ -21,7 +21,7 @@ const IndexPage: NextPage = function () {
         </Center>
         <Card>
           <SimpleGrid columns={1} spacing="3">
-            <Button
+            {/* <Button
               leftIcon={
                 <img src="/google.svg" alt="google logo" style={{ backgroundColor: 'white', padding: '8px' }} />
               }
@@ -31,7 +31,7 @@ const IndexPage: NextPage = function () {
               onClick={signInWithGoogle}
             >
               Google 계정으로 시작하기
-            </Button>
+            </Button> */}
             <Button leftIcon={<FaTwitter />} colorScheme="twitter" onClick={signInWithTwitter}>
               Twitter 계정으로 시작하기
             </Button>
