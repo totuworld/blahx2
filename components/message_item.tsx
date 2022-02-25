@@ -1,4 +1,4 @@
-import { Avatar, Box, Divider, Flex, Text, Textarea } from '@chakra-ui/react';
+import { Avatar, Box, Button, Divider, Flex, Text, Textarea } from '@chakra-ui/react';
 import { useState } from 'react';
 import ResizeTextarea from 'react-textarea-autosize';
 import { InMessage } from '@/models/message/in_message';
@@ -60,21 +60,11 @@ const MessageItem = function ({ uid, photoURL, displayName, isOwner, item, onSen
           <Box pt="2">
             <Divider />
             <Box display="flex" mt="2">
-              <Box pt="2">
+              <Box pt="1">
                 <Avatar size="xs" src={photoURL} mr="2" />
               </Box>
-              <Box borderRadius="md" width="full" bg="gray.100">
+              <Box borderRadius="md" width="full" bg="gray.100" mr="2">
                 <Textarea
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && e.shiftKey) {
-                      return;
-                    }
-                    if (e.key === 'Enter') {
-                      MessageClientService.postReplay({ uid, messageId: item.id, reply: message }).then(() => {
-                        onSendComplete();
-                      });
-                    }
-                  }}
                   border="none"
                   boxShadow="none !important"
                   resize="none"
@@ -90,6 +80,21 @@ const MessageItem = function ({ uid, photoURL, displayName, isOwner, item, onSen
                   }}
                 />
               </Box>
+              <Button
+                disabled={message.length === 0}
+                colorScheme="pink"
+                bgColor="#FF75B5"
+                variant="solid"
+                size="sm"
+                // borderRadius="full"
+                onClick={() => {
+                  MessageClientService.postReplay({ uid, messageId: item.id, reply: message }).then(() => {
+                    onSendComplete();
+                  });
+                }}
+              >
+                등록
+              </Button>
             </Box>
           </Box>
         )}

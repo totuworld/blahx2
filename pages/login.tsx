@@ -1,15 +1,9 @@
 import { NextPage } from 'next';
-import { Box, Button, Center, Flex, Heading } from '@chakra-ui/react';
+import { Box, Button, Center, Heading, Flex, Text } from '@chakra-ui/react';
 import { FaTwitter } from 'react-icons/fa';
 import { ServiceLayout } from '@/components/containers/service_layout';
 import { useAuth } from '@/contexts/auth_user.context';
 
-/** 최초 진입 페이지
- *
- * 가입 유도 문구
- * 트위터, 구글, 페북, 애플 로그인 버튼
- *
- */
 const IndexPage: NextPage = function () {
   const { signInWithTwitter } = useAuth();
   return (
@@ -18,8 +12,9 @@ const IndexPage: NextPage = function () {
         <Center marginTop="20" marginBottom="10" p="6">
           <Box>
             <img src="/blahx2.svg" alt="hero" />
-            <Flex justify="center">
+            <Flex justify="center" alignItems="center" flexDir="column">
               <Heading>#BlahBlah</Heading>
+              <Text fontSize="sm">익명으로 대화해보세요</Text>
             </Flex>
           </Box>
         </Center>
@@ -34,7 +29,7 @@ const IndexPage: NextPage = function () {
             colorScheme="twitter"
             onClick={signInWithTwitter}
           >
-            Twitter 계정으로 시작하기
+            Twitter 계정으로 로그인
           </Button>
         </Center>
       </Box>
@@ -49,7 +44,7 @@ const IndexPage: NextPage = function () {
             colorScheme="twitter"
             onClick={signInWithTwitter}
           >
-            Twitter 계정으로 시작하기
+            Twitter 계정으로 로그인
           </Button>
         </Center>
       </Box>
