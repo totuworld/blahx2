@@ -2,7 +2,6 @@ import {
   Box,
   Flex,
   Text,
-  IconButton,
   Button,
   Stack,
   Collapse,
@@ -14,8 +13,9 @@ import {
   useColorModeValue,
   useBreakpointValue,
   useDisclosure,
+  Spacer,
 } from '@chakra-ui/react';
-import { HamburgerIcon, CloseIcon, ChevronDownIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import { NavItem } from './interface/gnb_interface';
 import { useAuth } from '@/contexts/auth_user.context';
 
@@ -30,9 +30,11 @@ const GNB: React.FC = function () {
       fontWeight={600}
       color="white"
       bg="pink.400"
-      href="#"
       _hover={{
         bg: 'pink.300',
+      }}
+      onClick={() => {
+        window.location.href = '/login';
       }}
     >
       로그인
@@ -61,21 +63,22 @@ const GNB: React.FC = function () {
         maxW="md"
         mx="auto"
       >
-        <Flex flex={{ base: 1, md: 'auto' }} ml={{ base: -2 }} display={{ base: 'flex', md: 'none' }}>
+        {/* <Flex flex={{ base: 1, md: 'auto' }} ml={{ base: -2 }} display={{ base: 'flex', md: 'none' }}>
           <IconButton
             onClick={onToggle}
             icon={isOpen ? <CloseIcon w={3} h={3} /> : <HamburgerIcon w={5} h={5} />}
             variant="ghost"
             aria-label="Toggle Navigation"
           />
-        </Flex>
+        </Flex> */}
+        <Spacer />
         <Flex flex={{ base: 1 }} justify={{ base: 'center', md: 'start' }}>
           <Text
             textAlign={useBreakpointValue({ base: 'center', md: 'left' })}
             fontFamily="heading"
             color={useColorModeValue('gray.800', 'white')}
           >
-            Logo
+            <img style={{ height: '40px' }} src="/logo.svg" alt="logo" />
           </Text>
 
           <Flex display={{ base: 'none', md: 'flex' }} ml={10}>

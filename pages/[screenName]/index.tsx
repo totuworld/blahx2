@@ -1,6 +1,6 @@
 import { GetServerSideProps, NextPage } from 'next';
 import { Avatar, Box, Button, Flex, Spacer, Text, Textarea, useToast, VStack } from '@chakra-ui/react';
-import { EmailIcon, TriangleDownIcon } from '@chakra-ui/icons';
+import { TriangleDownIcon } from '@chakra-ui/icons';
 import { useState } from 'react';
 import { useQuery } from 'react-query';
 import axios from 'axios';
@@ -133,7 +133,9 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
             />
             <Button
               disabled={message.length === 0}
-              colorScheme="twitter"
+              bgColor="#FFB86C"
+              color="white"
+              colorScheme="yellow"
               variant="solid"
               size="sm"
               onClick={() => {
@@ -147,12 +149,10 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
               등록
             </Button>
           </Flex>
-          <Flex pt="2">
-            <Spacer />
-          </Flex>
         </Box>
         {messageList.length === 0 && (
           <Box mt="6">
+            <img style={{ width: '50%', margin: '0 auto' }} src="/blahx2.svg" alt="hero" />
             <Flex justify="center">
               <Box mb="6" height="100vh" fontSize="xs">
                 첫 질문을 남겨보세요
