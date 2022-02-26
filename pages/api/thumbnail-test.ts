@@ -1,21 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import chromium from 'chrome-aws-lambda';
-import playwright from 'playwright-core';
+import playwright, { loadFont } from 'playwright-aws-lambda';
 import { getBaseUrl } from '@/utils/get_base_url';
 
 // https://ndo.dev/posts/link-screenshot
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   // Start Playwright with the dynamic chrome-aws-lambda args
-  const localChromiumPath = process.env.NODE_ENV !== 'development' ? '' : process.env.LOCAL_CHROMIUM_PATH ?? '';
-  if (process.env.NODE_ENV !== 'development') {
-    const hostAndPort = getBaseUrl(true);
-    await chromium.font(`${hostAndPort}/woff2/Pretendard-Regular.woff2`);
-  }
-  const browser = await playwright.chromium.launch({
-    args: chromium.args,
-    executablePath: process.env.NODE_ENV !== 'development' ? await chromium.executablePath : localChromiumPath,
-    headless: process.env.NODE_ENV !== 'development' ? chromium.headless : true,
-  });
+  const browser = await playwright.launchChromium();
+
+  const hostAndPort = getBaseUrl(true);
+
+  await loadFont(`${hostAndPort}/woff2/Pretendard-Regular.woff2`);
 
   // Create a page with the recommended Open Graph image size
   const page = await browser.newPage({
