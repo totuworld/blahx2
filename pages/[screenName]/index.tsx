@@ -17,6 +17,8 @@ import { useState } from 'react';
 import { useQuery } from 'react-query';
 import axios from 'axios';
 import ResizeTextarea from 'react-textarea-autosize';
+import Head from 'next/head';
+import getConfig from 'next/config';
 import { InMemberInfo } from '@/models/member/in_member_info';
 import getStringValueFromQuery from '@/utils/get_value_from_query';
 import { memberFindByScreenNameForClient } from '@/models/member/member.client.service';
@@ -72,6 +74,7 @@ async function postMessage({
 }
 
 const UserHomePage: NextPage<Props> = function ({ userInfo }) {
+  const { publicRuntimeConfig } = getConfig();
   const toast = useToast();
   const { authUser } = useAuth();
   const [message, updateMessage] = useState('');
@@ -128,152 +131,169 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
   if (userInfo === null) {
     return <p>사용자를 찾을 수 없습니다.</p>;
   }
+  const mainUrl = `https://${publicRuntimeConfig.mainDomain}/${userInfo.screenName}`;
   return (
-    <ServiceLayout backgroundColor="gray.200">
-      <Box maxW="md" mx="auto" pt="6">
-        <Box borderWidth="1px" borderRadius="lg" overflow="hidden" mb="2" bg="white">
-          <Box display="flex" p="6">
-            <Avatar size="lg" src={userInfo.photoURL?.replace('_normal', '')} mr="2" />
-            <Flex direction="column" justify="center">
-              <Text fontSize="md">{userInfo.displayName}</Text>
-              <Text fontSize="xs">@{userInfo.screenName}</Text>
-            </Flex>
-          </Box>
-        </Box>
-        <Box borderWidth="1px" borderRadius="lg" p="2" overflow="hidden" bg="white">
-          <Flex>
-            <Box pt="1" pr="2">
-              <Avatar
-                size="xs"
-                src={isAnonymous ? 'https://bit.ly/broken-link' : authUser?.photoURL ?? 'https://bit.ly/broken-link'}
-              />
+    <>
+      <Head>
+        <meta property="og:url" content={mainUrl} />
+        <meta property="og:image" content={`https://${publicRuntimeConfig.mainDomain}/main.jpg`} />
+        <meta property="og:site_name" content="blahX2" />
+        <meta property="og:title" content={`${userInfo.displayName} 님에게 질문하기`} />
+        <meta property="og:description" content={`${userInfo.displayName}님과 익명으로 대화를 나눠보세요`} />
+        <meta name="twitter:title" content={`${userInfo.displayName} 님에게 질문하기`} />
+        <meta name="twitter:description" content={`${userInfo.displayName}님과 익명으로 대화를 나눠보세요`} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content={`https://${publicRuntimeConfig.mainDomain}/main.jpg`} />
+        <meta name="twitter:image:alt" content="blahX2" />
+        <meta name="twitter:url" content={mainUrl} />
+        <meta name="twitter:domain" content={publicRuntimeConfig.mainDomain} />
+      </Head>
+      <ServiceLayout backgroundColor="gray.200">
+        <Box maxW="md" mx="auto" pt="6">
+          <Box borderWidth="1px" borderRadius="lg" overflow="hidden" mb="2" bg="white">
+            <Box display="flex" p="6">
+              <Avatar size="lg" src={userInfo.photoURL?.replace('_normal', '')} mr="2" />
+              <Flex direction="column" justify="center">
+                <Text fontSize="md">{userInfo.displayName}</Text>
+                <Text fontSize="xs">@{userInfo.screenName}</Text>
+              </Flex>
             </Box>
-            <Textarea
-              bg="gray.100"
-              border="none"
-              boxShadow="none !important"
-              placeholder="무엇이 궁금한가요?"
-              borderRadius="md"
-              resize="none"
-              minH="unset"
-              minRows={1}
-              maxRows={7}
-              overflow="hidden"
-              fontSize="xs"
-              mr="2"
-              as={ResizeTextarea}
-              value={message}
-              onChange={(e) => {
-                // 최대 7줄만 스크린샷에 표현되니 7줄 넘게 입력하면 제한걸어야한다.
-                if (e.target.value) {
-                  const lineCount = (e.target.value.match(/[^\n]*\n[^\n]*/gi)?.length ?? 1) + 1;
-                  if (lineCount > 7) {
+          </Box>
+          <Box borderWidth="1px" borderRadius="lg" p="2" overflow="hidden" bg="white">
+            <Flex>
+              <Box pt="1" pr="2">
+                <Avatar
+                  size="xs"
+                  src={isAnonymous ? 'https://bit.ly/broken-link' : authUser?.photoURL ?? 'https://bit.ly/broken-link'}
+                />
+              </Box>
+              <Textarea
+                bg="gray.100"
+                border="none"
+                boxShadow="none !important"
+                placeholder="무엇이 궁금한가요?"
+                borderRadius="md"
+                resize="none"
+                minH="unset"
+                minRows={1}
+                maxRows={7}
+                overflow="hidden"
+                fontSize="xs"
+                mr="2"
+                as={ResizeTextarea}
+                value={message}
+                onChange={(e) => {
+                  // 최대 7줄만 스크린샷에 표현되니 7줄 넘게 입력하면 제한걸어야한다.
+                  if (e.target.value) {
+                    const lineCount = (e.target.value.match(/[^\n]*\n[^\n]*/gi)?.length ?? 1) + 1;
+                    if (lineCount > 7) {
+                      toast({
+                        title: '최대 7줄까지만 입력가능합니다',
+                        position: 'top-right',
+                      });
+                      return;
+                    }
+                  }
+                  updateMessage(e.target.value);
+                }}
+              />
+              <Button
+                disabled={message.length === 0}
+                bgColor="#FFB86C"
+                color="white"
+                colorScheme="yellow"
+                variant="solid"
+                size="sm"
+                onClick={() => {
+                  sendMessage().finally(() => {
+                    updateMessage('');
+                    setPage(1);
+                    setSalt((p) => !p);
+                  });
+                }}
+              >
+                등록
+              </Button>
+            </Flex>
+            <FormControl display="flex" alignItems="center" mt="1">
+              <Switch
+                size="sm"
+                colorScheme="orange"
+                id="anonymous"
+                mr="1"
+                isChecked={isAnonymous}
+                onChange={() => {
+                  if (userInfo === null) {
                     toast({
-                      title: '최대 7줄까지만 입력가능합니다',
+                      title: '로그인이 필요합니다',
                       position: 'top-right',
                     });
                     return;
                   }
-                }
-                updateMessage(e.target.value);
-              }}
-            />
-            <Button
-              disabled={message.length === 0}
-              bgColor="#FFB86C"
-              color="white"
-              colorScheme="yellow"
-              variant="solid"
-              size="sm"
-              onClick={() => {
-                sendMessage().finally(() => {
-                  updateMessage('');
-                  setPage(1);
-                  setSalt((p) => !p);
-                });
-              }}
-            >
-              등록
-            </Button>
-          </Flex>
-          <FormControl display="flex" alignItems="center" mt="1">
-            <Switch
-              size="sm"
-              colorScheme="orange"
-              id="anonymous"
-              mr="1"
-              isChecked={isAnonymous}
-              onChange={() => {
-                if (userInfo === null) {
-                  toast({
-                    title: '로그인이 필요합니다',
-                    position: 'top-right',
-                  });
-                  return;
-                }
-                setAnonymous((prev) => !prev);
-              }}
-            />
-            <FormLabel htmlFor="anonymous" mb="0" fontSize="xx-small">
-              Anonymous
-            </FormLabel>
-          </FormControl>
-        </Box>
-        {messageList.length === 0 && (
-          <Box mt="6">
-            <img style={{ width: '50%', margin: '0 auto' }} src="/blahx2.svg" alt="hero" />
-            <Flex justify="center">
-              <Box mb="6" height="100vh" fontSize="xs">
-                첫 질문을 남겨보세요
-              </Box>
-            </Flex>
-          </Box>
-        )}
-        {messageList.length > 0 && (
-          <VStack spacing="12px" mt="6">
-            {messageList.map((item) => (
-              <MessageItem
-                key={`message-${userInfo.uid}-${item.id}`}
-                uid={userInfo.uid}
-                screenName={userInfo.screenName}
-                photoURL={userInfo.photoURL ?? ''}
-                displayName={userInfo.displayName ?? ''}
-                isOwner={authUser !== null && authUser.uid === userInfo.uid}
-                item={item}
-                onSendComplete={() => {
-                  MessageClientService.get({ uid: userInfo.uid, messageId: item.id }).then((updateInfo) => {
-                    if (updateInfo.payload !== undefined) {
-                      setMessageList((prev) => {
-                        const findIndex = prev.findIndex((fv) => fv.id === updateInfo.payload!.id);
-                        if (findIndex >= 0) {
-                          const updateArr = [...prev];
-                          updateArr[findIndex] = updateInfo.payload!;
-                          return updateArr;
-                        }
-                        return prev;
-                      });
-                    }
-                  });
+                  setAnonymous((prev) => !prev);
                 }}
               />
-            ))}
-          </VStack>
-        )}
-        {totalPages > page && (
-          <Button
-            width="full"
-            mt="2"
-            leftIcon={<TriangleDownIcon />}
-            fontSize="sm"
-            onClick={() => {
-              setPage((p) => p + 1);
-            }}
-          >
-            더보기
-          </Button>
-        )}
-      </Box>
-    </ServiceLayout>
+              <FormLabel htmlFor="anonymous" mb="0" fontSize="xx-small">
+                Anonymous
+              </FormLabel>
+            </FormControl>
+          </Box>
+          {messageList.length === 0 && (
+            <Box mt="6">
+              <img style={{ width: '50%', margin: '0 auto' }} src="/blahx2.svg" alt="hero" />
+              <Flex justify="center">
+                <Box mb="6" height="100vh" fontSize="xs">
+                  첫 질문을 남겨보세요
+                </Box>
+              </Flex>
+            </Box>
+          )}
+          {messageList.length > 0 && (
+            <VStack spacing="12px" mt="6">
+              {messageList.map((item) => (
+                <MessageItem
+                  key={`message-${userInfo.uid}-${item.id}`}
+                  uid={userInfo.uid}
+                  screenName={userInfo.screenName}
+                  photoURL={userInfo.photoURL ?? ''}
+                  displayName={userInfo.displayName ?? ''}
+                  isOwner={authUser !== null && authUser.uid === userInfo.uid}
+                  item={item}
+                  onSendComplete={() => {
+                    MessageClientService.get({ uid: userInfo.uid, messageId: item.id }).then((updateInfo) => {
+                      if (updateInfo.payload !== undefined) {
+                        setMessageList((prev) => {
+                          const findIndex = prev.findIndex((fv) => fv.id === updateInfo.payload!.id);
+                          if (findIndex >= 0) {
+                            const updateArr = [...prev];
+                            updateArr[findIndex] = updateInfo.payload!;
+                            return updateArr;
+                          }
+                          return prev;
+                        });
+                      }
+                    });
+                  }}
+                />
+              ))}
+            </VStack>
+          )}
+          {totalPages > page && (
+            <Button
+              width="full"
+              mt="2"
+              leftIcon={<TriangleDownIcon />}
+              fontSize="sm"
+              onClick={() => {
+                setPage((p) => p + 1);
+              }}
+            >
+              더보기
+            </Button>
+          )}
+        </Box>
+      </ServiceLayout>
+    </>
   );
 };
 

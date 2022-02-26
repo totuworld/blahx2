@@ -2,6 +2,7 @@ import { Avatar, Box, Button, Divider, Flex, Spacer, Text, Textarea } from '@cha
 import { useState } from 'react';
 import ResizeTextarea from 'react-textarea-autosize';
 import { FaTwitter } from 'react-icons/fa';
+import getConfig from 'next/config';
 import { InMessage } from '@/models/message/in_message';
 import MessageClientService from '@/controllers/message/message.client.service';
 import convertDateToString from '@/utils/convert_date_to_string';
@@ -17,7 +18,9 @@ interface Props {
 }
 
 const MessageItem = function ({ uid, photoURL, displayName, isOwner, item, onSendComplete, screenName }: Props) {
+  const { publicRuntimeConfig } = getConfig();
   const [message, updateMessage] = useState('');
+  const mainUrl = `https://${publicRuntimeConfig.mainDomain}`;
   return (
     <Box borderRadius="md" width="full" bg="white" boxShadow="md">
       <Box>
@@ -59,7 +62,7 @@ const MessageItem = function ({ uid, photoURL, displayName, isOwner, item, onSen
                       <a
                         href={`https://twitter.com/intent/tweet?text=${item.reply.substring(0, 150)}${
                           item.reply.length > 150 ? '...' : ''
-                        } https://blahx2.totu.dev/${screenName}/message/${item.id}`}
+                        } ${mainUrl}/${screenName}/message/${item.id}`}
                         data-size="large"
                       >
                         Tweet
