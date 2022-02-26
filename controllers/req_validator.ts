@@ -29,13 +29,12 @@ function validateParamWithData<T>(
     return {
       result,
       data,
-      errorMessage: typeof valid === 'boolean' && !valid && !!validate.errors ? validate.errors[0].message : '',
+      errorMessage: typeof valid === 'boolean' && !valid && !!validate.errors ? validate.errors[0].message ?? '' : '',
     };
   } catch (err) {
     console.error(err);
     return {
       result: false,
-      data: param,
       errorMessage: 'catch validate error',
     };
   }

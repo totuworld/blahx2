@@ -21,7 +21,7 @@ import { useAuth } from '@/contexts/auth_user.context';
 
 const GNB: React.FC = function () {
   const { loading, authUser, signOut } = useAuth();
-  const { isOpen, onToggle } = useDisclosure();
+  const { isOpen } = useDisclosure();
 
   const loginBtn = (
     <Button

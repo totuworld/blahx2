@@ -1,11 +1,4 @@
-import {
-  User,
-  GoogleAuthProvider,
-  TwitterAuthProvider,
-  signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
-} from 'firebase/auth';
+import { User, GoogleAuthProvider, TwitterAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useState, useEffect } from 'react';
 import FirebaseAuthClient from '@/models/auth/firebase_auth_client';
 import { InAuthUser } from './interface/in_auth_user';
