@@ -187,6 +187,7 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
           <FormControl display="flex" alignItems="center" mt="1">
             <Switch
               size="sm"
+              colorScheme="orange"
               id="anonymous"
               mr="1"
               isChecked={isAnonymous}
