@@ -9,7 +9,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   const localChromiumPath = process.env.NODE_ENV !== 'development' ? '' : process.env.LOCAL_CHROMIUM_PATH ?? '';
   if (process.env.NODE_ENV !== 'development') {
     const hostAndPort = getBaseUrl(true);
-    await chromium.font(`${hostAndPort}/woff2/Pretendard-Regular.woff2`);
+    await chromium.font(`${hostAndPort}/Pretendard-Regular.ttf`);
   }
   const browser = await playwright.chromium.launch({
     args: chromium.args,
