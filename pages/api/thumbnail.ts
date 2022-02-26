@@ -16,7 +16,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   const page = await browser.newPage({
     viewport: {
       width: 1200,
-      height: 720,
+      height: 675,
     },
   });
 
