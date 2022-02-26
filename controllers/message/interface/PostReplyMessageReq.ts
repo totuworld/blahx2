@@ -5,5 +5,9 @@ export interface PostReplyMessageReq {
   };
   body: {
     reply: string;
+    author?: {
+      displayName: string;
+      photoURL?: string;
+    };
   };
 }

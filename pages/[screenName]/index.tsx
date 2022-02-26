@@ -1,5 +1,17 @@
 import { GetServerSideProps, NextPage } from 'next';
-import { Avatar, Box, Button, Flex, Spacer, Text, Textarea, useToast, VStack } from '@chakra-ui/react';
+import {
+  Avatar,
+  Box,
+  Button,
+  Flex,
+  FormControl,
+  FormLabel,
+  Switch,
+  Text,
+  Textarea,
+  useToast,
+  VStack,
+} from '@chakra-ui/react';
 import { TriangleDownIcon } from '@chakra-ui/icons';
 import { useState } from 'react';
 import { useQuery } from 'react-query';
@@ -30,9 +42,14 @@ interface Props {
 async function postMessage({
   message,
   uid,
+  author,
 }: {
   message: string;
   uid: string;
+  author?: {
+    displayName: string;
+    photoURL?: string;
+  };
 }): Promise<{ result: true } | { result: false; message: string }> {
   if (message.length <= 0) {
     return {
@@ -41,7 +58,7 @@ async function postMessage({
     };
   }
   try {
-    await MessageClientService.post({ message, uid });
+    await MessageClientService.post({ message, uid, author });
     return {
       result: true,
     };
@@ -59,7 +76,21 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
   const { authUser } = useAuth();
   const [message, updateMessage] = useState('');
   async function sendMessage() {
-    const resp = await postMessage({ uid: userInfo?.uid ?? '', message });
+    const postData: {
+      message: string;
+      uid: string;
+      author?: {
+        displayName: string;
+        photoURL?: string;
+      };
+    } = { uid: userInfo?.uid ?? '', message };
+    if (isAnonymous === false) {
+      postData.author = {
+        photoURL: authUser?.photoURL ?? 'https://bit.ly/broken-link',
+        displayName: authUser?.displayName ?? 'anonymous',
+      };
+    }
+    const resp = await postMessage(postData);
     if (resp.result === false) {
       toast({
         title: '메시지 등록 실패',
@@ -71,6 +102,7 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [messageList, setMessageList] = useState<InMessage[]>([]);
+  const [isAnonymous, setAnonymous] = useState(true);
   // const queryClient = useQueryClient();
   const messageListQueryKey = ['messageList', userInfo?.uid, page, listLoadingSalt];
   useQuery(
@@ -111,7 +143,10 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
         <Box borderWidth="1px" borderRadius="lg" p="2" overflow="hidden" bg="white">
           <Flex>
             <Box pt="1" pr="2">
-              <Avatar size="xs" src="https://bit.ly/broken-link" />
+              <Avatar
+                size="xs"
+                src={isAnonymous ? 'https://bit.ly/broken-link' : authUser?.photoURL ?? 'https://bit.ly/broken-link'}
+              />
             </Box>
             <Textarea
               bg="gray.100"
@@ -149,6 +184,27 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
               등록
             </Button>
           </Flex>
+          <FormControl display="flex" alignItems="center" mt="1">
+            <Switch
+              size="sm"
+              id="anonymous"
+              mr="1"
+              isChecked={isAnonymous}
+              onChange={() => {
+                if (userInfo === null) {
+                  toast({
+                    title: '로그인이 필요합니다',
+                    position: 'top-right',
+                  });
+                  return;
+                }
+                setAnonymous((prev) => !prev);
+              }}
+            />
+            <FormLabel htmlFor="anonymous" mb="0" fontSize="xx-small">
+              Anonymous
+            </FormLabel>
+          </FormControl>
         </Box>
         {messageList.length === 0 && (
           <Box mt="6">

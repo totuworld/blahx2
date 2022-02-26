@@ -21,8 +21,8 @@ async function post(req: NextApiRequest, res: NextApiResponse) {
     throw new BadReqError(validateResp.errorMessage);
   }
 
-  const { uid, message } = validateResp.data.body;
-  await MessageModel.post({ uid, message });
+  const { uid, message, author } = validateResp.data.body;
+  await MessageModel.post({ uid, message, author });
   return res.status(201).end();
 }
 

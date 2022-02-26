@@ -13,6 +13,19 @@ const JSCPostMessageReq: JSONSchema6 = {
           description: 'auth를 통해서 발급된 고유 id',
           type: 'string',
         },
+        author: {
+          additionalProperties: false,
+          properties: {
+            displayName: {
+              description: '사용자가 마음껏 변경해서 뿌릴 수 있는 이름',
+              type: 'string',
+            },
+            photoURL: {
+              type: 'string',
+            },
+          },
+          required: ['displayName'],
+        },
       },
       required: ['uid', 'message'],
       type: 'object',

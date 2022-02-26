@@ -9,7 +9,18 @@ const MEMBER_COLLECTION = 'members';
 const MESSAGE_COLLECTION = 'messages';
 const SCREEN_NAME_COLLECTION = 'screen_names';
 
-async function post({ uid, message }: { uid: string; message: string }) {
+async function post({
+  uid,
+  message,
+  author,
+}: {
+  uid: string;
+  message: string;
+  author?: {
+    displayName: string;
+    photoURL?: string;
+  };
+}) {
   const memberRef = FirebaseAdmin.getInstance().Firestore.collection(MEMBER_COLLECTION).doc(uid);
   await FirebaseAdmin.getInstance().Firestore.runTransaction(async (transaction) => {
     const memberDoc = await transaction.get(memberRef);
@@ -23,11 +34,23 @@ async function post({ uid, message }: { uid: string; message: string }) {
       messageCount = memberInfo.messageCount;
     }
     const newMessageRef = memberRef.collection(MESSAGE_COLLECTION).doc();
-    await transaction.set(newMessageRef, {
+    const newMessageBody: {
+      messageNo: number;
+      message: string;
+      createAt: firestore.FieldValue;
+      author?: {
+        displayName: string;
+        photoURL?: string;
+      };
+    } = {
       messageNo: messageCount,
       message,
       createAt: FieldValue.serverTimestamp(),
-    });
+    };
+    if (author !== undefined) {
+      newMessageBody.author = author;
+    }
+    await transaction.set(newMessageRef, newMessageBody);
     await transaction.update(memberRef, { messageCount: messageCount + 1 });
   });
 }
