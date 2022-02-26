@@ -6,7 +6,7 @@ interface Props {
 }
 const PrintText = function ({ printText }: Props) {
   return (
-    <Text whiteSpace="pre-line" p="4" position="absolute" fontSize="32pt" fontFamily="Pretendard">
+    <Text whiteSpace="pre-line" p="4" position="absolute" fontSize="32pt" fontFamily="Pretendard, Noto Sans KR">
       {printText}
     </Text>
   );

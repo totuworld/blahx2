@@ -7,7 +7,7 @@ const OpenGraphImg: NextPage = function () {
   const { query } = useRouter();
   const printText = query.text ?? '';
   return (
-    <Box width="full" bgColor="white" p="25px" borderRadius="lg">
+    <Box width="full" bgColor="white" p="25px" pt="50px" borderRadius="lg">
       <PrintText printText={printText} />
       <Img src="/screenshot_bg.svg" alt="frame" />
     </Box>
