@@ -54,16 +54,18 @@ const MessageItem = function ({ uid, photoURL, displayName, isOwner, item, onSen
                     {convertDateToString(item.updateAt!)}
                   </Text>
                   <Spacer />
-                  <Button size="xs" borderRadius="full" leftIcon={<FaTwitter />} colorScheme="twitter">
-                    <a
-                      href={`https://twitter.com/intent/tweet?text=${item.reply.substring(0, 150)}${
-                        item.reply.length > 150 ? '...' : ''
-                      } https://blahx2.totu.dev/${screenName}/message/${item.id}`}
-                      data-size="large"
-                    >
-                      Tweet
-                    </a>
-                  </Button>
+                  {isOwner && (
+                    <Button size="xs" borderRadius="full" leftIcon={<FaTwitter />} colorScheme="twitter">
+                      <a
+                        href={`https://twitter.com/intent/tweet?text=${item.reply.substring(0, 150)}${
+                          item.reply.length > 150 ? '...' : ''
+                        } https://blahx2.totu.dev/${screenName}/message/${item.id}`}
+                        data-size="large"
+                      >
+                        Tweet
+                      </a>
+                    </Button>
+                  )}
                 </Flex>
                 <Text whiteSpace="pre-line" fontSize="xs">
                   {item.reply}
