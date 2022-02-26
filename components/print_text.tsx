@@ -8,7 +8,7 @@ const PrintText = function ({ printText }: Props) {
   const textCount = printText.length;
   const usedText = textCount > 200 ? `${(printText as string).substring(0, 199)}...(나머지는 링크로)` : printText;
   return (
-    <Text whiteSpace="pre-line" p="4" position="absolute" fontSize="32pt" fontFamily="Pretendard, Noto Sans KR">
+    <Text whiteSpace="pre-line" p="4" position="absolute" fontSize="32pt" fontFamily="Pretendard">
       {usedText}
     </Text>
   );
