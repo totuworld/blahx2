@@ -235,6 +235,7 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
               <MessageItem
                 key={`message-${userInfo.uid}-${item.id}`}
                 uid={userInfo.uid}
+                screenName={userInfo.screenName}
                 photoURL={userInfo.photoURL ?? ''}
                 displayName={userInfo.displayName ?? ''}
                 isOwner={authUser !== null && authUser.uid === userInfo.uid}

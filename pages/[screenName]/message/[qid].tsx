@@ -59,6 +59,7 @@ const ReplyHomePage: NextPage<Props> = function ({ userInfo, item: propsItem, ho
           <Box mt="6">
             <MessageItem
               uid={userInfo.uid}
+              screenName={userInfo.screenName}
               photoURL={userInfo.photoURL ?? ''}
               displayName={userInfo.displayName ?? ''}
               isOwner={authUser !== null && authUser.uid === userInfo.uid}

@@ -1,12 +1,14 @@
-import { Avatar, Box, Button, Divider, Flex, Text, Textarea } from '@chakra-ui/react';
+import { Avatar, Box, Button, Divider, Flex, Spacer, Text, Textarea } from '@chakra-ui/react';
 import { useState } from 'react';
 import ResizeTextarea from 'react-textarea-autosize';
+import { FaTwitter } from 'react-icons/fa';
 import { InMessage } from '@/models/message/in_message';
 import MessageClientService from '@/controllers/message/message.client.service';
 import convertDateToString from '@/utils/convert_date_to_string';
 
 interface Props {
   uid: string;
+  screenName: string;
   photoURL: string;
   displayName: string;
   isOwner: boolean;
@@ -14,7 +16,7 @@ interface Props {
   onSendComplete: () => void;
 }
 
-const MessageItem = function ({ uid, photoURL, displayName, isOwner, item, onSendComplete }: Props) {
+const MessageItem = function ({ uid, photoURL, displayName, isOwner, item, onSendComplete, screenName }: Props) {
   const [message, updateMessage] = useState('');
   return (
     <Box borderRadius="md" width="full" bg="white" boxShadow="md">
@@ -51,6 +53,17 @@ const MessageItem = function ({ uid, photoURL, displayName, isOwner, item, onSen
                   <Text whiteSpace="pre-line" fontSize="xs" color="gray">
                     {convertDateToString(item.updateAt!)}
                   </Text>
+                  <Spacer />
+                  <Button size="xs" borderRadius="full" leftIcon={<FaTwitter />} colorScheme="twitter">
+                    <a
+                      href={`https://twitter.com/intent/tweet?text=${item.reply.substring(0, 150)}${
+                        item.reply.length > 150 ? '...' : ''
+                      } https://blahx2.totu.dev/${screenName}/message/${item.id}`}
+                      data-size="large"
+                    >
+                      Tweet
+                    </a>
+                  </Button>
                 </Flex>
                 <Text whiteSpace="pre-line" fontSize="xs">
                   {item.reply}
