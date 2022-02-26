@@ -33,7 +33,10 @@ const ReplyHomePage: NextPage<Props> = function ({ userInfo, item: propsItem, ho
     <>
       <Head>
         <meta property="og:image" content={fullImageURL} />
-        <meta property="twitter:image" content={fullImageURL} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@blahx2" />
+        <meta name="twitter:title" content={propsItem?.message} />
+        <meta name="twitter:image" content={fullImageURL} />
       </Head>
       <ServiceLayout height="100vh" backgroundColor="gray.200">
         <Box maxW="md" mx="auto" pt="6">
