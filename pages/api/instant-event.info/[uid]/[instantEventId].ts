@@ -8,10 +8,10 @@ import InstantMessageCtrl from '@/controllers/instant_message/instant_msg.contro
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { method } = req;
-  const supportMethod = ['POST'];
+  const supportMethod = ['GET'];
   try {
     checkSupportMethod(supportMethod, method);
-    await InstantMessageCtrl.create(req, res);
+    await InstantMessageCtrl.get(req, res);
   } catch (err) {
     console.error(err);
     handleError(err, res);

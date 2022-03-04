@@ -44,9 +44,10 @@ async function createEvent({
     };
   }
   try {
-    await InstantMessageClientService.create({ uid, title, desc, startDate, endDate });
+    const resp = await InstantMessageClientService.create({ uid, title, desc, startDate, endDate });
     return {
       result: true,
+      instantEventId: resp.payload?.instantEventId,
     };
   } catch (err) {
     console.error(err);
@@ -82,6 +83,10 @@ const InstantPanel = function ({ userInfo }: Props) {
         title: '이벤트 생성 실패',
         position: 'top-right',
       });
+    }
+    if (resp.result === true && resp.instantEventId !== undefined) {
+      // 해당 질문 목록으로 바로 진입 시킨다.
+      window.location.href = `/${userInfo.screenName}/instant/${resp.instantEventId}`;
     }
   }
 

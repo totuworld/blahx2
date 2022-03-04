@@ -1,3 +1,5 @@
+import { InInstantEvent } from '@/models/instant_message/interface/in_instant_event';
+import { getBaseUrl } from '@/utils/get_base_url';
 import { requester, Resp } from '@/utils/requester';
 
 async function create({
@@ -12,7 +14,7 @@ async function create({
   desc?: string;
   startDate?: string;
   endDate?: string;
-}): Promise<Resp<unknown>> {
+}): Promise<Resp<{ instantEventId: string }>> {
   const url = '/api/instant-event.create';
   try {
     const postData = {
@@ -22,7 +24,7 @@ async function create({
       startDate,
       endDate,
     };
-    const resp = await requester({
+    const resp = await requester<{ instantEventId: string }>({
       option: {
         url,
         method: 'POST',
@@ -37,8 +39,35 @@ async function create({
   }
 }
 
+async function get({
+  uid,
+  instantEventId,
+  isServer = false,
+}: {
+  uid: string;
+  instantEventId: string;
+  isServer?: boolean;
+}): Promise<Resp<InInstantEvent>> {
+  const hostAndPort: string = getBaseUrl(isServer);
+  const url = `${hostAndPort}/api/instant-event.info/${uid}/${instantEventId}`;
+  try {
+    const resp = await requester<InInstantEvent>({
+      option: {
+        url,
+        method: 'GET',
+      },
+    });
+    return resp;
+  } catch (err) {
+    return {
+      status: 500,
+    };
+  }
+}
+
 const InstantMessageClientService = {
   create,
+  get,
 };
 
 export default InstantMessageClientService;
