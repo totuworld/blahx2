@@ -65,9 +65,40 @@ async function get({
   }
 }
 
+async function post({
+  uid,
+  instantEventId,
+  message,
+}: {
+  uid: string;
+  instantEventId: string;
+  message: string;
+}): Promise<Resp<unknown>> {
+  const url = '/api/instant-event.messages.add';
+  try {
+    const resp = await requester({
+      option: {
+        url,
+        method: 'POST',
+        data: {
+          uid,
+          instantEventId,
+          message,
+        },
+      },
+    });
+    return resp;
+  } catch (err) {
+    return {
+      status: 500,
+    };
+  }
+}
+
 const InstantMessageClientService = {
   create,
   get,
+  post,
 };
 
 export default InstantMessageClientService;

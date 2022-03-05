@@ -6,6 +6,8 @@ import JSCCreateInstantEventReq from './JSONSchema/JSCCreateInstantEventReq';
 import InstantMessageModel from '@/models/instant_message/instant_msg.model';
 import JSCGetInstantEventReq from './JSONSchema/JSCGetInstantEventReq';
 import { GetInstantEventReq } from './interface/GetInstantEventReq';
+import { PostInstantEventMessageReq } from './interface/PostInstantEventMessageReq';
+import JSCPostInstantEventMessageReq from './JSONSchema/JSCPostInstantEventMessageReq';
 
 async function create(req: NextApiRequest, res: NextApiResponse) {
   const validateResp = validateParamWithData<CreateInstantEventReq>(
@@ -38,9 +40,24 @@ async function get(req: NextApiRequest, res: NextApiResponse) {
   return res.status(200).json(instantEventInfo);
 }
 
+async function post(req: NextApiRequest, res: NextApiResponse) {
+  const validateResp = validateParamWithData<PostInstantEventMessageReq>(
+    {
+      body: req.body,
+    },
+    JSCPostInstantEventMessageReq,
+  );
+  if (validateResp.result === false) {
+    throw new BadReqError(validateResp.errorMessage);
+  }
+  await InstantMessageModel.post({ ...validateResp.data.body });
+  return res.status(201).end();
+}
+
 const InstantMessageCtrl = {
   create,
   get,
+  post,
 };
 
 export default InstantMessageCtrl;

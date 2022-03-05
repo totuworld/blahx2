@@ -1,8 +1,12 @@
+import { firestore } from 'firebase-admin';
+import moment from 'moment';
 import CustomServerError from '@/controllers/custom_error/custom_server_error';
 import FirebaseAdmin from '../firebase_admin';
 import { InInstantEvent } from './interface/in_instant_event';
+import FieldValue = firestore.FieldValue;
 
-const INSTANT_MESSAGE = 'instants';
+const INSTANT_EVENT = 'instants';
+const INSTANT_MESSAGE = 'messages';
 const MEMBER_COLLECTION = 'members';
 
 /** instant 이벤트 생성 */
@@ -53,7 +57,7 @@ async function get({ uid, instantEventId }: { uid: string; instantEventId: strin
   const eventRef = FirebaseAdmin.getInstance()
     .Firestore.collection(MEMBER_COLLECTION)
     .doc(uid)
-    .collection(INSTANT_MESSAGE)
+    .collection(INSTANT_EVENT)
     .doc(instantEventId);
   const infoResp: InInstantEvent = await FirebaseAdmin.getInstance().Firestore.runTransaction(async (transaction) => {
     const memberDoc = await transaction.get(memberRef);
@@ -74,13 +78,13 @@ async function get({ uid, instantEventId }: { uid: string; instantEventId: strin
   return infoResp;
 }
 /** instant 이벤트에 질문 등록 */
-async function post({ uid, eventId, message }: { uid: string; eventId: string; message: string }) {
+async function post({ uid, instantEventId, message }: { uid: string; instantEventId: string; message: string }) {
   const memberRef = FirebaseAdmin.getInstance().Firestore.collection(MEMBER_COLLECTION).doc(uid);
   const eventRef = FirebaseAdmin.getInstance()
     .Firestore.collection(MEMBER_COLLECTION)
     .doc(uid)
-    .collection(INSTANT_MESSAGE)
-    .doc(eventId);
+    .collection(INSTANT_EVENT)
+    .doc(instantEventId);
   await FirebaseAdmin.getInstance().Firestore.runTransaction(async (transaction) => {
     const memberDoc = await transaction.get(memberRef);
     const eventDoc = await transaction.get(eventRef);
@@ -91,8 +95,22 @@ async function post({ uid, eventId, message }: { uid: string; eventId: string; m
     if (eventDoc.exists === false) {
       throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 이벤트에 질문을 보내고 있네요 ☠️' });
     }
-    const newPostRef = memberRef.collection(INSTANT_MESSAGE).doc();
-    await transaction.create(newPostRef, { message });
+    // 이벤트 정보 확인
+    const eventInfo = eventDoc.data() as InInstantEvent;
+    // 이미 폐쇄된 이벤트인가?
+    if (eventInfo.closed !== undefined && eventInfo.closed) {
+      throw new CustomServerError({ statusCode: 400, message: '종료된 이벤트에 질문을 보내고 있네요 ☠️' });
+    }
+    // 종료 날짜가 있나?
+    if (eventInfo.endDate !== undefined) {
+      const isBefore = moment().isBefore(moment(eventInfo.endDate, moment.ISO_8601));
+      if (isBefore === false) {
+        await transaction.update(eventRef, { closed: true });
+        throw new CustomServerError({ statusCode: 400, message: '종료된 이벤트에 질문을 보내고 있네요 ☠️' });
+      }
+    }
+    const newPostRef = eventRef.collection(INSTANT_MESSAGE).doc();
+    await transaction.create(newPostRef, { message, createAt: FieldValue.serverTimestamp() });
   });
 }
 

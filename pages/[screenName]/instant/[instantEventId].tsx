@@ -18,13 +18,39 @@ interface Props {
   instantEventInfo: InInstantEvent | null;
 }
 
+async function postMessage({ message, uid, instantEventId }: { message: string; uid: string; instantEventId: string }) {
+  if (message.length <= 0) {
+    return {
+      result: false,
+      message: '메시지를 입력해주세요',
+    };
+  }
+  try {
+    await InstantMessageClientService.post({
+      uid,
+      instantEventId,
+      message,
+    });
+    return {
+      result: true,
+    };
+  } catch (err) {
+    console.error(err);
+    return {
+      result: false,
+      message: '등록 실패',
+    };
+  }
+}
+
 const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEventInfo }) {
   const toast = useToast();
   const [message, updateMessage] = useState('');
 
-  if (userInfo === null) {
+  if (userInfo === null || instantEventInfo === null) {
     return <p>사용자를 찾을 수 없습니다.</p>;
   }
+
   return (
     <ServiceLayout height="100vh" backgroundColor="gray.200">
       <Box maxW="md" mx="auto" pt="6">
@@ -90,8 +116,18 @@ const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEvent
               colorScheme="yellow"
               variant="solid"
               size="sm"
-              onClick={() => {
-                // TODO: click 처리
+              onClick={async () => {
+                const resp = await postMessage({
+                  message,
+                  uid: userInfo.uid,
+                  instantEventId: instantEventInfo.instantEventId,
+                });
+                if (resp.result === false) {
+                  toast({
+                    title: '메시지 등록 실패',
+                    position: 'top-right',
+                  });
+                }
               }}
             >
               등록
