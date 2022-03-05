@@ -4,6 +4,7 @@ import CustomServerError from '@/controllers/custom_error/custom_server_error';
 import FirebaseAdmin from '../firebase_admin';
 import { InInstantEvent } from './interface/in_instant_event';
 import FieldValue = firestore.FieldValue;
+import { InInstantEventMessage, InInstantEventMessageServer } from './interface/in_instant_event_message';
 
 const INSTANT_EVENT = 'instants';
 const INSTANT_MESSAGE = 'messages';
@@ -110,14 +111,45 @@ async function post({ uid, instantEventId, message }: { uid: string; instantEven
       }
     }
     const newPostRef = eventRef.collection(INSTANT_MESSAGE).doc();
-    await transaction.create(newPostRef, { message, createAt: FieldValue.serverTimestamp() });
+    await transaction.create(newPostRef, { message, replyCount: 0, createAt: FieldValue.serverTimestamp() });
   });
+}
+
+async function messageList({ uid, instantEventId }: { uid: string; instantEventId: string }) {
+  const memberRef = FirebaseAdmin.getInstance().Firestore.collection(MEMBER_COLLECTION).doc(uid);
+  const result = await FirebaseAdmin.getInstance().Firestore.runTransaction(async (transaction) => {
+    const memberDoc = await transaction.get(memberRef);
+    // 해당 사용자가 존재하지 않는다.
+    if (memberDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 404, message: '존재하지않는 사용자' });
+    }
+    const colRef = FirebaseAdmin.getInstance()
+      .Firestore.collection(MEMBER_COLLECTION)
+      .doc(uid)
+      .collection(INSTANT_EVENT)
+      .doc(instantEventId)
+      .collection(INSTANT_MESSAGE);
+    const colDocs = await transaction.get(colRef);
+    const data = colDocs.docs.map((mv) => {
+      const docData = mv.data() as Omit<InInstantEventMessageServer, 'id'>;
+      const returnData = {
+        ...docData,
+        id: mv.id,
+        createAt: docData.createAt.toDate().toISOString(),
+        updateAt: docData.updateAt ? docData.updateAt.toDate().toISOString() : undefined,
+      } as InInstantEventMessage;
+      return returnData;
+    });
+    return data;
+  });
+  return result;
 }
 
 const InstantMessageModel = {
   create,
   post,
   get,
+  messageList,
 };
 
 export default InstantMessageModel;

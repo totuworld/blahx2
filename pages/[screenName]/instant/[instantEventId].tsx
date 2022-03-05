@@ -1,16 +1,20 @@
 import { GetServerSideProps, NextPage } from 'next';
-import { Avatar, Box, Button, Flex, Text, Textarea, useToast } from '@chakra-ui/react';
+import { Avatar, Box, Button, Flex, Text, Textarea, useToast, VStack } from '@chakra-ui/react';
 import { ChevronLeftIcon } from '@chakra-ui/icons';
 import Link from 'next/link';
 import ResizeTextarea from 'react-textarea-autosize';
 import { useState } from 'react';
+import { useQuery } from 'react-query';
+import axios from 'axios';
 import { InMemberInfo } from '@/models/member/in_member_info';
-import getStringValueFromQuery from '@/utils/get_value_from_query';
-import { memberFindByScreenNameForClient } from '@/models/member/member.client.service';
 import { ServiceLayout } from '@/components/containers/service_layout';
-import { getBaseUrl } from '@/utils/get_base_url';
 import { InInstantEvent } from '@/models/instant_message/interface/in_instant_event';
 import InstantMessageClientService from '@/controllers/instant_message/instant_msg.client.service';
+import { InInstantEventMessage } from '@/models/instant_message/interface/in_instant_event_message';
+import InstantMessageItem from '@/components/instant_message_item';
+import { getBaseUrl } from '@/utils/get_base_url';
+import getStringValueFromQuery from '@/utils/get_value_from_query';
+import { memberFindByScreenNameForClient } from '@/models/member/member.client.service';
 
 interface Props {
   host: string;
@@ -46,6 +50,27 @@ async function postMessage({ message, uid, instantEventId }: { message: string; 
 const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEventInfo }) {
   const toast = useToast();
   const [message, updateMessage] = useState('');
+  const [messageList, setMessageList] = useState<InInstantEventMessage[]>([]);
+
+  const messageListQueryKey = ['instantMessageList', userInfo?.uid, instantEventInfo?.instantEventId];
+  useQuery(
+    messageListQueryKey,
+    async () =>
+      // eslint-disable-next-line no-return-await
+      await axios.get<InInstantEventMessage[]>(
+        `/api/instant-event.messages.list/${userInfo?.uid}/${instantEventInfo?.instantEventId}`,
+      ),
+    {
+      enabled: true, // TODO: 답변 등록이 가능한 시점을 기준으로만 데이터를 패치해야함.
+      keepPreviousData: true,
+      refetchOnWindowFocus: false,
+      onSuccess: (data) => {
+        if (data.status === 200 && data.data) {
+          setMessageList(data.data);
+        }
+      },
+    },
+  );
 
   if (userInfo === null || instantEventInfo === null) {
     return <p>사용자를 찾을 수 없습니다.</p>;
@@ -134,6 +159,16 @@ const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEvent
             </Button>
           </Flex>
         </Box>
+        {messageList.length > 0 && (
+          <VStack spacing="12px" mt="6">
+            {messageList.map((item) => (
+              <InstantMessageItem
+                key={`instant-message-${userInfo.uid}-${instantEventInfo.instantEventId}-${item.id}`}
+                item={item}
+              />
+            ))}
+          </VStack>
+        )}
       </Box>
     </ServiceLayout>
   );
