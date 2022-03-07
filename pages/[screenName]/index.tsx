@@ -55,10 +55,10 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
               </Flex>
             </Box>
           </Box>
-          <Tabs isFitted variant="enclosed" defaultIndex={1}>
+          <Tabs isFitted variant="soft-rounded" defaultIndex={1}>
             <TabList px="4">
-              <Tab _selected={{ color: 'white', bg: 'blue.500' }}>상시 질문</Tab>
-              <Tab _selected={{ color: 'white', bg: 'blue.500' }}>즉석 목록</Tab>
+              <Tab>상시 질문</Tab>
+              <Tab>즉석 목록</Tab>
             </TabList>
             <TabPanels>
               <TabPanel>

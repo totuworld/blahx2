@@ -1,4 +1,5 @@
 import { InInstantEvent } from '@/models/instant_message/interface/in_instant_event';
+import { InInstantEventMessage } from '@/models/instant_message/interface/in_instant_event_message';
 import { getBaseUrl } from '@/utils/get_base_url';
 import { requester, Resp } from '@/utils/requester';
 
@@ -95,10 +96,80 @@ async function post({
   }
 }
 
+async function postReply({
+  uid,
+  instantEventId,
+  messageId,
+  reply,
+  author,
+}: {
+  uid: string;
+  instantEventId: string;
+  messageId: string;
+  reply: string;
+  author?: {
+    displayName: string;
+    photoURL?: string;
+  };
+}) {
+  const url = `/api/instant-event.messages.add.reply/${uid}/${instantEventId}/${messageId}`;
+  try {
+    const sendData: {
+      reply: string;
+      author?: {
+        displayName: string;
+        photoURL?: string;
+      };
+    } = { reply };
+    if (author !== undefined) {
+      sendData.author = author;
+    }
+    const resp = await requester({
+      option: {
+        url,
+        method: 'POST',
+        data: sendData,
+      },
+    });
+    return resp;
+  } catch (err) {
+    return {
+      status: 500,
+    };
+  }
+}
+
+async function getMessageInfo({
+  uid,
+  instantEventId,
+  messageId,
+}: {
+  uid: string;
+  instantEventId: string;
+  messageId: string;
+}): Promise<Resp<InInstantEventMessage>> {
+  const url = `/api/instant-event.messages.info/${uid}/${instantEventId}/${messageId}`;
+  try {
+    const resp = await requester<InInstantEventMessage>({
+      option: {
+        url,
+        method: 'GET',
+      },
+    });
+    return resp;
+  } catch (err) {
+    return {
+      status: 500,
+    };
+  }
+}
+
 const InstantMessageClientService = {
   create,
   get,
   post,
+  postReply,
+  getMessageInfo,
 };
 
 export default InstantMessageClientService;

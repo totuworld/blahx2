@@ -6,6 +6,7 @@ import ResizeTextarea from 'react-textarea-autosize';
 import { useState } from 'react';
 import { useQuery } from 'react-query';
 import axios from 'axios';
+import moment from 'moment';
 import { InMemberInfo } from '@/models/member/in_member_info';
 import { ServiceLayout } from '@/components/containers/service_layout';
 import { InInstantEvent } from '@/models/instant_message/interface/in_instant_event';
@@ -47,10 +48,33 @@ async function postMessage({ message, uid, instantEventId }: { message: string; 
   }
 }
 
-const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEventInfo }) {
+const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEventInfo: propsEventInfo }) {
   const toast = useToast();
   const [message, updateMessage] = useState('');
+  const [instantEventInfo, setInstantEventInfo] = useState(propsEventInfo);
   const [messageList, setMessageList] = useState<InInstantEventMessage[]>([]);
+
+  const eventState = (() => {
+    if (instantEventInfo === null) {
+      return 'none';
+    }
+    if (instantEventInfo.closed === true) {
+      // 완전히 종료된 경우
+      return 'closed';
+    }
+    const now = moment();
+    const startDate = moment(instantEventInfo.startDate, moment.ISO_8601);
+    const endDate = moment(instantEventInfo.endDate, moment.ISO_8601);
+    // 질문 가능한 기간 내 인가?
+    if (now.isBetween(startDate, endDate, undefined, '[]')) {
+      return 'question';
+    }
+    // 질문 가능한 기간이 넘었나?
+    if (now.isAfter(endDate)) {
+      return 'reply';
+    }
+    return 'pre';
+  })();
 
   const messageListQueryKey = ['instantMessageList', userInfo?.uid, instantEventInfo?.instantEventId];
   useQuery(
@@ -61,7 +85,7 @@ const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEvent
         `/api/instant-event.messages.list/${userInfo?.uid}/${instantEventInfo?.instantEventId}`,
       ),
     {
-      enabled: true, // TODO: 답변 등록이 가능한 시점을 기준으로만 데이터를 패치해야함.
+      enabled: eventState === 'reply',
       keepPreviousData: true,
       refetchOnWindowFocus: false,
       onSuccess: (data) => {
@@ -75,6 +99,8 @@ const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEvent
   if (userInfo === null || instantEventInfo === null) {
     return <p>사용자를 찾을 수 없습니다.</p>;
   }
+
+  const endDate = moment(instantEventInfo.endDate, moment.ISO_8601);
 
   return (
     <ServiceLayout height="100vh" backgroundColor="gray.200">
@@ -95,76 +121,103 @@ const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEvent
             </Flex>
           </Box>
         </Box>
-        <Box>
-          <h4>{instantEventInfo?.title}</h4>
-          <Box>{instantEventInfo?.desc}</Box>
+        <Box borderWidth="1px" borderRadius="lg" bg="white" p="6">
+          <Text fontSize="md">{instantEventInfo?.title}</Text>
+          <Text fontSize="xs">{instantEventInfo?.desc}</Text>
+          {eventState === 'question' && <Text fontSize="xs">{endDate.format('YYYY-MM-DD hh:mm')}까지 질문 가능</Text>}
         </Box>
-        <Box borderWidth="1px" borderRadius="lg" p="2" overflow="hidden" bg="white">
-          <Flex>
-            <Box pt="1" pr="2">
-              <Avatar size="xs" src="https://bit.ly/broken-link" />
-            </Box>
-            <Textarea
-              bg="gray.100"
-              border="none"
-              boxShadow="none !important"
-              placeholder="익명으로 질문할 내용을 입력해주세요"
-              borderRadius="md"
-              resize="none"
-              minH="unset"
-              minRows={1}
-              maxRows={7}
-              overflow="hidden"
-              fontSize="xs"
-              mr="2"
-              as={ResizeTextarea}
-              value={message}
-              onChange={(e) => {
-                // 최대 7줄만 스크린샷에 표현되니 7줄 넘게 입력하면 제한걸어야한다.
-                if (e.target.value) {
-                  const lineCount = (e.target.value.match(/[^\n]*\n[^\n]*/gi)?.length ?? 1) + 1;
-                  if (lineCount > 7) {
+        {eventState === 'question' && (
+          <Box borderWidth="1px" borderRadius="lg" p="2" overflow="hidden" bg="white">
+            <Flex>
+              <Box pt="1" pr="2">
+                <Avatar size="xs" src="https://bit.ly/broken-link" />
+              </Box>
+              <Textarea
+                bg="gray.100"
+                border="none"
+                boxShadow="none !important"
+                placeholder="익명으로 질문할 내용을 입력해주세요"
+                borderRadius="md"
+                resize="none"
+                minH="unset"
+                minRows={1}
+                maxRows={7}
+                overflow="hidden"
+                fontSize="xs"
+                mr="2"
+                as={ResizeTextarea}
+                value={message}
+                onChange={(e) => {
+                  // 최대 7줄만 스크린샷에 표현되니 7줄 넘게 입력하면 제한걸어야한다.
+                  if (e.target.value) {
+                    const lineCount = (e.target.value.match(/[^\n]*\n[^\n]*/gi)?.length ?? 1) + 1;
+                    if (lineCount > 7) {
+                      toast({
+                        title: '최대 7줄까지만 입력가능합니다',
+                        position: 'top-right',
+                      });
+                      return;
+                    }
+                  }
+                  updateMessage(e.target.value);
+                }}
+              />
+              <Button
+                disabled={message.length === 0}
+                bgColor="#FFB86C"
+                color="white"
+                colorScheme="yellow"
+                variant="solid"
+                size="sm"
+                onClick={async () => {
+                  const resp = await postMessage({
+                    message,
+                    uid: userInfo.uid,
+                    instantEventId: instantEventInfo.instantEventId,
+                  });
+                  if (resp.result === false) {
                     toast({
-                      title: '최대 7줄까지만 입력가능합니다',
+                      title: '메시지 등록 실패',
                       position: 'top-right',
                     });
-                    return;
                   }
-                }
-                updateMessage(e.target.value);
-              }}
-            />
-            <Button
-              disabled={message.length === 0}
-              bgColor="#FFB86C"
-              color="white"
-              colorScheme="yellow"
-              variant="solid"
-              size="sm"
-              onClick={async () => {
-                const resp = await postMessage({
-                  message,
-                  uid: userInfo.uid,
-                  instantEventId: instantEventInfo.instantEventId,
-                });
-                if (resp.result === false) {
-                  toast({
-                    title: '메시지 등록 실패',
-                    position: 'top-right',
-                  });
-                }
-              }}
-            >
-              등록
-            </Button>
-          </Flex>
-        </Box>
-        {messageList.length > 0 && (
+                  updateMessage('');
+                }}
+              >
+                등록
+              </Button>
+            </Flex>
+          </Box>
+        )}
+        {eventState === 'reply' && (
           <VStack spacing="12px" mt="6">
             {messageList.map((item) => (
               <InstantMessageItem
                 key={`instant-message-${userInfo.uid}-${instantEventInfo.instantEventId}-${item.id}`}
+                uid={userInfo.uid}
+                instantEventId={instantEventInfo.instantEventId}
                 item={item}
+                onSendComplete={() => {
+                  console.info('send complete');
+                  InstantMessageClientService.getMessageInfo({
+                    uid: userInfo.uid,
+                    instantEventId: instantEventInfo.instantEventId,
+                    messageId: item.id,
+                  }).then((info) => {
+                    if (info.payload === undefined) {
+                      return;
+                    }
+                    setMessageList((prev) => {
+                      const findPrevIndex = prev.findIndex((fv) => fv.id === info.payload!.id);
+                      if (findPrevIndex < 0) {
+                        return prev;
+                      }
+                      const updateArr = [...prev];
+                      updateArr[findPrevIndex] = info.payload!;
+                      return updateArr;
+                    });
+                  });
+                }}
               />
             ))}
           </VStack>

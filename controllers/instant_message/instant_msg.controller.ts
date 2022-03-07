@@ -9,6 +9,8 @@ import { GetInstantEventReq } from './interface/GetInstantEventReq';
 import { PostInstantEventMessageReq } from './interface/PostInstantEventMessageReq';
 import JSCPostInstantEventMessageReq from './JSONSchema/JSCPostInstantEventMessageReq';
 import JSCInstantEventMessageListReq from './JSONSchema/JSCInstantEventMessageListReq';
+import JSCInstantEventMessageInfoReq from './JSONSchema/JSCInstantEventMessageInfoReq';
+import JSCPostInstantEventMessageReplyReq from './JSONSchema/JSCPostInstantEventMessageReplyReq';
 
 async function create(req: NextApiRequest, res: NextApiResponse) {
   const validateResp = validateParamWithData<CreateInstantEventReq>(
@@ -74,11 +76,61 @@ async function messageList(req: NextApiRequest, res: NextApiResponse) {
   return res.status(200).json(result);
 }
 
+async function getMessageInfo(req: NextApiRequest, res: NextApiResponse) {
+  const validateResp = validateParamWithData<{
+    query: {
+      uid: string;
+      instantEventId: string;
+      messageId: string;
+    };
+  }>(
+    {
+      query: req.query,
+    },
+    JSCInstantEventMessageInfoReq,
+  );
+  if (validateResp.result === false) {
+    throw new BadReqError(validateResp.errorMessage);
+  }
+  const result = await InstantMessageModel.messageInfo({ ...validateResp.data.query });
+  return res.status(200).json(result);
+}
+
+async function postReply(req: NextApiRequest, res: NextApiResponse) {
+  const validateResp = validateParamWithData<{
+    query: {
+      uid: string;
+      instantEventId: string;
+      messageId: string;
+    };
+    body: {
+      reply: string;
+      author?: {
+        displayName: string;
+        photoURL?: string;
+      };
+    };
+  }>(
+    {
+      query: req.query,
+      body: req.body,
+    },
+    JSCPostInstantEventMessageReplyReq,
+  );
+  if (validateResp.result === false) {
+    throw new BadReqError(validateResp.errorMessage);
+  }
+  await InstantMessageModel.postReply({ ...validateResp.data.query, ...validateResp.data.body });
+  return res.status(200).end();
+}
+
 const InstantMessageCtrl = {
   create,
   get,
   post,
   messageList,
+  getMessageInfo,
+  postReply,
 };
 
 export default InstantMessageCtrl;

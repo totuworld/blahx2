@@ -27,7 +27,7 @@ const JSCCreateInstantEventReq: JSONSchema6 = {
           type: 'string',
         },
       },
-      required: ['uid', 'title'],
+      required: ['uid', 'title', 'startDate', 'endDate'],
       type: 'object',
     },
   },

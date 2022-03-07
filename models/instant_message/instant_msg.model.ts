@@ -21,10 +21,9 @@ async function create({
   uid: string;
   title: string;
   desc?: string;
-  startDate?: string;
-  endDate?: string;
+  startDate: string;
+  endDate: string;
 }) {
-  const memberCollection = FirebaseAdmin.getInstance().Firestore.collection(MEMBER_COLLECTION);
   const memberRef = FirebaseAdmin.getInstance().Firestore.collection(MEMBER_COLLECTION).doc(uid);
   const memberDoc = await memberRef.get();
   // 존재하지 않는 사용자
@@ -34,21 +33,20 @@ async function create({
   const newInstantEventBody: {
     title: string;
     desc?: string;
-    startDate?: string;
-    endDate?: string;
+    startDate: string;
+    endDate: string;
+    closed: boolean;
   } = {
     title,
+    startDate,
+    endDate,
+    closed: false,
   };
   if (desc !== undefined) {
     newInstantEventBody.desc = desc;
   }
-  if (startDate !== undefined) {
-    newInstantEventBody.startDate = startDate;
-  }
-  if (endDate !== undefined) {
-    newInstantEventBody.endDate = endDate;
-  }
-  const newInstantEventRef = await memberCollection.add(newInstantEventBody);
+  const instantCollection = memberRef.collection(INSTANT_EVENT);
+  const newInstantEventRef = await instantCollection.add(newInstantEventBody);
   return newInstantEventRef.id;
 }
 
@@ -145,11 +143,109 @@ async function messageList({ uid, instantEventId }: { uid: string; instantEventI
   return result;
 }
 
+async function messageInfo({
+  uid,
+  instantEventId,
+  messageId,
+}: {
+  uid: string;
+  instantEventId: string;
+  messageId: string;
+}): Promise<InInstantEventMessage> {
+  const memberRef = FirebaseAdmin.getInstance().Firestore.collection(MEMBER_COLLECTION).doc(uid);
+  const eventRef = FirebaseAdmin.getInstance()
+    .Firestore.collection(MEMBER_COLLECTION)
+    .doc(uid)
+    .collection(INSTANT_EVENT)
+    .doc(instantEventId);
+  const messageRef = eventRef.collection(INSTANT_MESSAGE).doc(messageId);
+  const resp = await FirebaseAdmin.getInstance().Firestore.runTransaction(async (transaction) => {
+    const memberDoc = await transaction.get(memberRef);
+    const eventDoc = await transaction.get(eventRef);
+    const messageDoc = await transaction.get(messageRef);
+    // 존재하지 않는 사용자
+    if (memberDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 사용자의 정보를 조회 중' });
+    }
+    if (eventDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 이벤트의 정보를 조회 중' });
+    }
+    if (messageDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 메시지를 조회 중' });
+    }
+    return messageDoc.data() as InInstantEventMessageServer;
+  });
+  return {
+    ...resp,
+    id: messageId,
+    createAt: resp.createAt.toDate().toISOString(),
+    updateAt: resp.updateAt ? resp.updateAt.toDate().toISOString() : undefined,
+  };
+}
+
+async function postReply({
+  uid,
+  instantEventId,
+  messageId,
+  reply,
+  author,
+}: {
+  uid: string;
+  instantEventId: string;
+  messageId: string;
+  reply: string;
+  author?: {
+    displayName: string;
+    photoURL?: string;
+  };
+}) {
+  const memberRef = FirebaseAdmin.getInstance().Firestore.collection(MEMBER_COLLECTION).doc(uid);
+  const eventRef = FirebaseAdmin.getInstance()
+    .Firestore.collection(MEMBER_COLLECTION)
+    .doc(uid)
+    .collection(INSTANT_EVENT)
+    .doc(instantEventId);
+  const messageRef = eventRef.collection(INSTANT_MESSAGE).doc(messageId);
+  await FirebaseAdmin.getInstance().Firestore.runTransaction(async (transaction) => {
+    const memberDoc = await transaction.get(memberRef);
+    const eventDoc = await transaction.get(eventRef);
+    const messageDoc = await transaction.get(messageRef);
+    // 존재하지 않는 사용자
+    if (memberDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 사용자의 정보를 조회 중' });
+    }
+    if (eventDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 이벤트의 정보를 조회 중' });
+    }
+    if (messageDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 메시지를 조회 중' });
+    }
+    const info = messageDoc.data() as InInstantEventMessageServer;
+    const addReply: {
+      reply: string;
+      createAt: string;
+      author?: {
+        displayName: string;
+        photoURL?: string;
+      };
+    } = { reply, createAt: moment().toISOString() };
+    if (author !== undefined) {
+      addReply.author = author;
+    }
+    await transaction.update(messageRef, {
+      reply: info.reply !== undefined ? [addReply, ...info.reply] : [addReply],
+      updateAt: FieldValue.serverTimestamp(),
+    });
+  });
+}
+
 const InstantMessageModel = {
   create,
   post,
   get,
   messageList,
+  messageInfo,
+  postReply,
 };
 
 export default InstantMessageModel;

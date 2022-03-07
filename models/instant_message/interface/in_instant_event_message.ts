@@ -3,7 +3,7 @@ import { firestore } from 'firebase-admin';
 export interface InInstantEventMessageBase {
   id: string;
   message: string;
-  replyCount: number;
+  reply: InInstantEventMessageReply[];
 }
 
 export interface InInstantEventMessage extends InInstantEventMessageBase {

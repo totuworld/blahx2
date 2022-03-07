@@ -12,7 +12,7 @@ import {
 } from '@chakra-ui/react';
 import { useRef, useState } from 'react';
 import { DatePicker } from 'antd';
-import { Moment } from 'moment';
+import moment, { Moment } from 'moment';
 import { useAuth } from '@/contexts/auth_user.context';
 import { InMemberInfo } from '@/models/member/in_member_info';
 import 'antd/dist/antd.css';
@@ -68,7 +68,9 @@ const InstantPanel = function ({ userInfo }: Props) {
 
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
-  const [dateRange, setDateRange] = useState<[Moment | null, Moment | null]>([null, null]);
+  const tempStartDate = moment();
+  const tempEndDate = moment(tempStartDate).add({ days: 1 });
+  const [dateRange, setDateRange] = useState<[Moment | null, Moment | null]>([tempStartDate, tempEndDate]);
 
   async function create() {
     const resp = await createEvent({
@@ -126,7 +128,7 @@ const InstantPanel = function ({ userInfo }: Props) {
               placeholder="설명"
             />
           </FormControl>
-          <FormControl mt={4}>
+          <FormControl mt={4} isRequired>
             <FormLabel>질문 가능 날짜</FormLabel>
             <RangePicker
               size="large"
