@@ -102,14 +102,14 @@ const InstantPanel = function ({ userInfo }: Props) {
               onOpen();
             }}
           >
-            질문 목록 생성
+            즉석 질문 이벤트 생성
           </Button>
         )}
       </Box>
       {isOpen && (
-        <>
+        <Box borderWidth="1px" borderRadius="lg" p="2" bg="white">
           <FormControl isRequired>
-            <FormLabel>질문 목록 이름</FormLabel>
+            <FormLabel>이벤트 이름</FormLabel>
             <Input
               onChange={(e) => {
                 setTitle(e.target.value);
@@ -165,7 +165,7 @@ const InstantPanel = function ({ userInfo }: Props) {
               </Button>
             </ButtonGroup>
           </Flex>
-        </>
+        </Box>
       )}
     </>
   );

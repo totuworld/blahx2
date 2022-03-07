@@ -46,7 +46,7 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
       </Head>
       <ServiceLayout backgroundColor="gray.200">
         <Box maxW="md" mx="auto" pt="6">
-          <Box borderWidth="1px" borderRadius="lg" overflow="hidden" mb="2" bg="white">
+          <Box borderWidth="1px" borderRadius="lg" overflow="hidden" mb="4" bg="white">
             <Box display="flex" p="6">
               <Avatar size="lg" src={userInfo.photoURL?.replace('_normal', '')} mr="2" />
               <Flex direction="column" justify="center">
@@ -56,15 +56,15 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
             </Box>
           </Box>
           <Tabs isFitted variant="soft-rounded" defaultIndex={1}>
-            <TabList px="4">
+            <TabList>
               <Tab>상시 질문</Tab>
               <Tab>즉석 목록</Tab>
             </TabList>
             <TabPanels>
-              <TabPanel>
+              <TabPanel px="0">
                 <DefaultPanel userInfo={userInfo} />
               </TabPanel>
-              <TabPanel>
+              <TabPanel px="0">
                 <InstantPanel userInfo={userInfo} />
               </TabPanel>
             </TabPanels>

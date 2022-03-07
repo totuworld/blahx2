@@ -112,16 +112,16 @@ const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEvent
             </Button>
           </a>
         </Link>
-        <Box borderWidth="1px" borderRadius="lg" overflow="hidden" mb="2" bg="white">
-          <Box display="flex" p="6">
-            <Avatar size="lg" src={userInfo.photoURL?.replace('_normal', '')} mr="2" />
-            <Flex direction="column" justify="center">
-              <Text fontSize="md">{userInfo.displayName}</Text>
-              <Text fontSize="xs">@{userInfo.screenName}</Text>
-            </Flex>
-          </Box>
-        </Box>
         <Box borderWidth="1px" borderRadius="lg" bg="white" p="6">
+          <Flex justify="center" mt={-14}>
+            <Avatar
+              size="lg"
+              src={userInfo.photoURL?.replace('_normal', '')}
+              css={{
+                border: '2px solid white',
+              }}
+            />
+          </Flex>
           <Text fontSize="md">{instantEventInfo?.title}</Text>
           <Text fontSize="xs">{instantEventInfo?.desc}</Text>
           {eventState === 'question' && <Text fontSize="xs">{endDate.format('YYYY-MM-DD hh:mm')}까지 질문 가능</Text>}
