@@ -51,7 +51,7 @@ async function postMessage({ message, uid, instantEventId }: { message: string; 
 const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEventInfo: propsEventInfo }) {
   const toast = useToast();
   const [message, updateMessage] = useState('');
-  const [instantEventInfo, setInstantEventInfo] = useState(propsEventInfo);
+  const [instantEventInfo] = useState(propsEventInfo);
   const [messageList, setMessageList] = useState<InInstantEventMessage[]>([]);
 
   const eventState = (() => {

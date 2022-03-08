@@ -80,11 +80,9 @@ const InstantPanel = function ({ userInfo }: Props) {
   const tempEndDate = moment(tempStartDate).add({ days: 1 });
   const [dateRange, setDateRange] = useState<[Moment | null, Moment | null]>([tempStartDate, tempEndDate]);
 
-  const [listLoadingSalt, setSalt] = useState(false);
-
   const afterTwoWeekMoment = moment().add(2, 'week');
 
-  const queryKey = ['instantEventList', userInfo.uid, listLoadingSalt];
+  const queryKey = ['instantEventList', userInfo.uid];
 
   useQuery(
     queryKey,
