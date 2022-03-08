@@ -10,6 +10,35 @@ const INSTANT_EVENT = 'instants';
 const INSTANT_MESSAGE = 'messages';
 const MEMBER_COLLECTION = 'members';
 
+async function findAllEvent({ uid }: { uid: string }): Promise<InInstantEvent[]> {
+  const memberRef = FirebaseAdmin.getInstance().Firestore.collection(MEMBER_COLLECTION).doc(uid);
+  const eventColRef = FirebaseAdmin.getInstance()
+    .Firestore.collection(MEMBER_COLLECTION)
+    .doc(uid)
+    .collection(INSTANT_EVENT);
+  const result = await FirebaseAdmin.getInstance().Firestore.runTransaction(async (transaction) => {
+    const memberDoc = await transaction.get(memberRef);
+    const eventListSnap = await transaction.get(eventColRef);
+
+    // 존재하지 않는 사용자
+    if (memberDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 사용자에게 질문을 보내고 있네요 ☠️' });
+    }
+
+    const data = eventListSnap.docs;
+
+    const allEvent: InInstantEvent[] = data.reduce((acc: InInstantEvent[], doc) => {
+      const innerData = doc.data() as InInstantEvent;
+      if (innerData.closed !== undefined && innerData.closed === false) {
+        acc.push({ ...innerData, instantEventId: doc.id });
+      }
+      return acc;
+    }, []);
+    return allEvent;
+  });
+  return result;
+}
+
 /** instant 이벤트 생성 */
 async function create({
   uid,
@@ -240,6 +269,7 @@ async function postReply({
 }
 
 const InstantMessageModel = {
+  findAllEvent,
   create,
   post,
   get,

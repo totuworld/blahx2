@@ -9,14 +9,20 @@ import {
   Spacer,
   useDisclosure,
   useToast,
+  Text,
 } from '@chakra-ui/react';
+import { ArrowRightIcon } from '@chakra-ui/icons';
 import { useRef, useState } from 'react';
 import { DatePicker } from 'antd';
 import moment, { Moment } from 'moment';
+import { useQuery } from 'react-query';
+import axios from 'axios';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/auth_user.context';
 import { InMemberInfo } from '@/models/member/in_member_info';
 import 'antd/dist/antd.css';
 import InstantMessageClientService from '@/controllers/instant_message/instant_msg.client.service';
+import { InInstantEvent } from '@/models/instant_message/interface/in_instant_event';
 
 const { RangePicker } = DatePicker;
 
@@ -63,6 +69,8 @@ const InstantPanel = function ({ userInfo }: Props) {
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
+  const [eventList, setEventList] = useState<InInstantEvent[]>([]);
+
   const initialRef = useRef<any>();
   const isOwner = authUser !== null && authUser.uid === userInfo.uid;
 
@@ -71,6 +79,27 @@ const InstantPanel = function ({ userInfo }: Props) {
   const tempStartDate = moment();
   const tempEndDate = moment(tempStartDate).add({ days: 1 });
   const [dateRange, setDateRange] = useState<[Moment | null, Moment | null]>([tempStartDate, tempEndDate]);
+
+  const [listLoadingSalt, setSalt] = useState(false);
+
+  const afterTwoWeekMoment = moment().add(2, 'week');
+
+  const queryKey = ['instantEventList', userInfo.uid, listLoadingSalt];
+
+  useQuery(
+    queryKey,
+    // eslint-disable-next-line no-return-await
+    async () => await axios.get<InInstantEvent[]>(`/api/instant-event.list/${userInfo.uid}`),
+    {
+      keepPreviousData: true,
+      refetchOnWindowFocus: false,
+      onSuccess: (data) => {
+        if (data.status === 200 && data.data) {
+          setEventList(data.data);
+        }
+      },
+    },
+  );
 
   async function create() {
     const resp = await createEvent({
@@ -133,6 +162,7 @@ const InstantPanel = function ({ userInfo }: Props) {
             <RangePicker
               size="large"
               value={dateRange}
+              disabledDate={(current) => current < moment().endOf('day') || current > afterTwoWeekMoment}
               onChange={(v) => {
                 if (v !== null) setDateRange(v);
               }}
@@ -167,6 +197,20 @@ const InstantPanel = function ({ userInfo }: Props) {
           </Flex>
         </Box>
       )}
+      <Box spacing="12px" mt="6">
+        {eventList.map((eventInfo) => (
+          <Link
+            key={`instantEventKey-${userInfo.uid}-${eventInfo.instantEventId}`}
+            href={`/${userInfo.screenName}/instant/${eventInfo.instantEventId}`}
+          >
+            <Flex bg="white" p="2" alignItems="center" borderRadius="md">
+              <Text>{eventInfo.title}</Text>
+              <Spacer />
+              <ArrowRightIcon />
+            </Flex>
+          </Link>
+        ))}
+      </Box>
     </>
   );
 };

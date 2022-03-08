@@ -55,7 +55,7 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
               </Flex>
             </Box>
           </Box>
-          <Tabs isFitted variant="soft-rounded" defaultIndex={1}>
+          <Tabs isFitted variant="soft-rounded">
             <TabList>
               <Tab>상시 질문</Tab>
               <Tab>즉석 목록</Tab>
