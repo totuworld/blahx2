@@ -12,6 +12,7 @@ import JSCInstantEventMessageListReq from './JSONSchema/JSCInstantEventMessageLi
 import JSCInstantEventMessageInfoReq from './JSONSchema/JSCInstantEventMessageInfoReq';
 import JSCPostInstantEventMessageReplyReq from './JSONSchema/JSCPostInstantEventMessageReplyReq';
 import JSCFindAllInstantEventReq from './JSONSchema/JSCFindAllInstantEventReq';
+import JSCCloseInstantEventReq from './JSONSchema/JSCCloseInstantEventReq';
 
 async function create(req: NextApiRequest, res: NextApiResponse) {
   const validateResp = validateParamWithData<CreateInstantEventReq>(
@@ -57,6 +58,21 @@ async function get(req: NextApiRequest, res: NextApiResponse) {
   const { uid, instantEventId } = validateResp.data.query;
   const instantEventInfo = await InstantMessageModel.get({ uid, instantEventId });
   return res.status(200).json(instantEventInfo);
+}
+
+async function close(req: NextApiRequest, res: NextApiResponse) {
+  const validateResp = validateParamWithData<{ body: { uid: string; instantEventId: string } }>(
+    {
+      body: req.body,
+    },
+    JSCCloseInstantEventReq,
+  );
+  if (validateResp.result === false) {
+    throw new BadReqError(validateResp.errorMessage);
+  }
+  const { uid, instantEventId } = validateResp.data.body;
+  await InstantMessageModel.close({ uid, instantEventId });
+  return res.status(200).end();
 }
 
 async function post(req: NextApiRequest, res: NextApiResponse) {
@@ -144,6 +160,7 @@ const InstantMessageCtrl = {
   findAllEvent,
   create,
   get,
+  close,
   post,
   messageList,
   getMessageInfo,

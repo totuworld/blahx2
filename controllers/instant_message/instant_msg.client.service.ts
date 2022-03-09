@@ -66,6 +66,27 @@ async function get({
   }
 }
 
+async function close({ uid, instantEventId }: { uid: string; instantEventId: string }): Promise<Resp<unknown>> {
+  const url = '/api/instant-event.close';
+  try {
+    const resp = await requester({
+      option: {
+        url,
+        method: 'PUT',
+        data: {
+          uid,
+          instantEventId,
+        },
+      },
+    });
+    return resp;
+  } catch (err) {
+    return {
+      status: 500,
+    };
+  }
+}
+
 async function post({
   uid,
   instantEventId,
@@ -167,6 +188,7 @@ async function getMessageInfo({
 const InstantMessageClientService = {
   create,
   get,
+  close,
   post,
   postReply,
   getMessageInfo,

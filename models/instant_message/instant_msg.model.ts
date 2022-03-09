@@ -105,6 +105,29 @@ async function get({ uid, instantEventId }: { uid: string; instantEventId: strin
   });
   return infoResp;
 }
+
+/** 이벤트 종료 처리 */
+async function close({ uid, instantEventId }: { uid: string; instantEventId: string }) {
+  const memberRef = FirebaseAdmin.getInstance().Firestore.collection(MEMBER_COLLECTION).doc(uid);
+  const eventRef = FirebaseAdmin.getInstance()
+    .Firestore.collection(MEMBER_COLLECTION)
+    .doc(uid)
+    .collection(INSTANT_EVENT)
+    .doc(instantEventId);
+  await FirebaseAdmin.getInstance().Firestore.runTransaction(async (transaction) => {
+    const memberDoc = await transaction.get(memberRef);
+    const eventDoc = await transaction.get(eventRef);
+    // 존재하지 않는 사용자
+    if (memberDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 사용자 ☠️' });
+    }
+    if (eventDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 이벤트 ☠️' });
+    }
+    await transaction.update(eventRef, { closed: true });
+  });
+}
+
 /** instant 이벤트에 질문 등록 */
 async function post({ uid, instantEventId, message }: { uid: string; instantEventId: string; message: string }) {
   const memberRef = FirebaseAdmin.getInstance().Firestore.collection(MEMBER_COLLECTION).doc(uid);
@@ -271,6 +294,7 @@ async function postReply({
 const InstantMessageModel = {
   findAllEvent,
   create,
+  close,
   post,
   get,
   messageList,
