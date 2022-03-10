@@ -25,7 +25,6 @@ const GNB: React.FC = function () {
 
   const loginBtn = (
     <Button
-      display={{ base: 'none', md: 'inline-flex' }}
       fontSize="sm"
       fontWeight={600}
       color="white"

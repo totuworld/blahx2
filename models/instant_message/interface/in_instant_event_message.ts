@@ -3,10 +3,13 @@ import { firestore } from 'firebase-admin';
 export interface InInstantEventMessageBase {
   id: string;
   message: string;
+  vote: number;
+  voter?: string[];
   reply: InInstantEventMessageReply[];
 }
 
 export interface InInstantEventMessage extends InInstantEventMessageBase {
+  voted: boolean;
   createAt: string;
   updateAt?: string;
 }

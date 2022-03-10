@@ -1,3 +1,4 @@
+import FirebaseAuthClient from '@/models/auth/firebase_auth_client';
 import { InInstantEvent } from '@/models/instant_message/interface/in_instant_event';
 import { InInstantEventMessage } from '@/models/instant_message/interface/in_instant_event_message';
 import { getBaseUrl } from '@/utils/get_base_url';
@@ -56,6 +57,27 @@ async function get({
       option: {
         url,
         method: 'GET',
+      },
+    });
+    return resp;
+  } catch (err) {
+    return {
+      status: 500,
+    };
+  }
+}
+
+async function lock({ uid, instantEventId }: { uid: string; instantEventId: string }): Promise<Resp<unknown>> {
+  const url = '/api/instant-event.lock';
+  try {
+    const resp = await requester({
+      option: {
+        url,
+        method: 'PUT',
+        data: {
+          uid,
+          instantEventId,
+        },
       },
     });
     return resp;
@@ -170,11 +192,48 @@ async function getMessageInfo({
   messageId: string;
 }): Promise<Resp<InInstantEventMessage>> {
   const url = `/api/instant-event.messages.info/${uid}/${instantEventId}/${messageId}`;
+  const token = await FirebaseAuthClient.getInstance().Auth.currentUser?.getIdToken();
   try {
     const resp = await requester<InInstantEventMessage>({
       option: {
         url,
         method: 'GET',
+        headers: token
+          ? {
+              authorization: token,
+            }
+          : {},
+      },
+    });
+    return resp;
+  } catch (err) {
+    return {
+      status: 500,
+    };
+  }
+}
+async function voteMessageInfo({
+  uid,
+  instantEventId,
+  messageId,
+  isUpvote = true,
+}: {
+  uid: string;
+  instantEventId: string;
+  messageId: string;
+  isUpvote?: boolean;
+}): Promise<Resp<InInstantEventMessage>> {
+  const url = '/api/instant-event.message.vote';
+  const token = await FirebaseAuthClient.getInstance().Auth.currentUser?.getIdToken();
+  try {
+    const resp = await requester<InInstantEventMessage>({
+      option: {
+        url,
+        method: 'PUT',
+        headers: {
+          authorization: token ?? '',
+        },
+        data: { uid, instantEventId, messageId, isUpvote },
       },
     });
     return resp;
@@ -188,6 +247,8 @@ async function getMessageInfo({
 const InstantMessageClientService = {
   create,
   get,
+  lock,
+  voteMessageInfo,
   close,
   post,
   postReply,

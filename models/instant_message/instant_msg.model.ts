@@ -106,7 +106,29 @@ async function get({ uid, instantEventId }: { uid: string; instantEventId: strin
   return infoResp;
 }
 
-/** 이벤트 종료 처리 */
+/** 이벤트 잠금 처리 - 더이상 댓글 등록이 불가능해짐 */
+async function lock({ uid, instantEventId }: { uid: string; instantEventId: string }) {
+  const memberRef = FirebaseAdmin.getInstance().Firestore.collection(MEMBER_COLLECTION).doc(uid);
+  const eventRef = FirebaseAdmin.getInstance()
+    .Firestore.collection(MEMBER_COLLECTION)
+    .doc(uid)
+    .collection(INSTANT_EVENT)
+    .doc(instantEventId);
+  await FirebaseAdmin.getInstance().Firestore.runTransaction(async (transaction) => {
+    const memberDoc = await transaction.get(memberRef);
+    const eventDoc = await transaction.get(eventRef);
+    // 존재하지 않는 사용자
+    if (memberDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 사용자 ☠️' });
+    }
+    if (eventDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 이벤트 ☠️' });
+    }
+    await transaction.update(eventRef, { locked: true });
+  });
+}
+
+/** 이벤트 종료 처리 - 질문이나 댓글을 미노출 */
 async function close({ uid, instantEventId }: { uid: string; instantEventId: string }) {
   const memberRef = FirebaseAdmin.getInstance().Firestore.collection(MEMBER_COLLECTION).doc(uid);
   const eventRef = FirebaseAdmin.getInstance()
@@ -152,6 +174,10 @@ async function post({ uid, instantEventId, message }: { uid: string; instantEven
     if (eventInfo.closed !== undefined && eventInfo.closed) {
       throw new CustomServerError({ statusCode: 400, message: '종료된 이벤트에 질문을 보내고 있네요 ☠️' });
     }
+    // 잠긴 이벤트인가?
+    if (eventInfo.locked !== undefined && eventInfo.locked) {
+      throw new CustomServerError({ statusCode: 400, message: '잠긴 이벤트에 질문을 보내고 있네요 ☠️' });
+    }
     // 종료 날짜가 있나?
     if (eventInfo.endDate !== undefined) {
       const isBefore = moment().isBefore(moment(eventInfo.endDate, moment.ISO_8601));
@@ -161,11 +187,19 @@ async function post({ uid, instantEventId, message }: { uid: string; instantEven
       }
     }
     const newPostRef = eventRef.collection(INSTANT_MESSAGE).doc();
-    await transaction.create(newPostRef, { message, replyCount: 0, createAt: FieldValue.serverTimestamp() });
+    await transaction.create(newPostRef, { message, vote: 0, createAt: FieldValue.serverTimestamp() });
   });
 }
 
-async function messageList({ uid, instantEventId }: { uid: string; instantEventId: string }) {
+async function messageList({
+  uid,
+  instantEventId,
+  currentUserUid,
+}: {
+  uid: string;
+  instantEventId: string;
+  currentUserUid?: string;
+}) {
   const memberRef = FirebaseAdmin.getInstance().Firestore.collection(MEMBER_COLLECTION).doc(uid);
   const result = await FirebaseAdmin.getInstance().Firestore.runTransaction(async (transaction) => {
     const memberDoc = await transaction.get(memberRef);
@@ -182,9 +216,20 @@ async function messageList({ uid, instantEventId }: { uid: string; instantEventI
     const colDocs = await transaction.get(colRef);
     const data = colDocs.docs.map((mv) => {
       const docData = mv.data() as Omit<InInstantEventMessageServer, 'id'>;
+      const voted = (() => {
+        if (docData.voter === undefined) {
+          return false;
+        }
+        if (currentUserUid === undefined) {
+          return false;
+        }
+        return docData.voter.findIndex((fv) => fv === currentUserUid) >= 0;
+      })();
       const returnData = {
         ...docData,
         id: mv.id,
+        voter: [],
+        voted,
         createAt: docData.createAt.toDate().toISOString(),
         updateAt: docData.updateAt ? docData.updateAt.toDate().toISOString() : undefined,
       } as InInstantEventMessage;
@@ -199,10 +244,12 @@ async function messageInfo({
   uid,
   instantEventId,
   messageId,
+  currentUserUid,
 }: {
   uid: string;
   instantEventId: string;
   messageId: string;
+  currentUserUid?: string;
 }): Promise<InInstantEventMessage> {
   const memberRef = FirebaseAdmin.getInstance().Firestore.collection(MEMBER_COLLECTION).doc(uid);
   const eventRef = FirebaseAdmin.getInstance()
@@ -227,12 +274,78 @@ async function messageInfo({
     }
     return messageDoc.data() as InInstantEventMessageServer;
   });
+  const voted = (() => {
+    if (resp.voter === undefined) {
+      return false;
+    }
+    if (currentUserUid === undefined) {
+      return false;
+    }
+    return resp.voter.findIndex((fv) => fv === currentUserUid) >= 0;
+  })();
   return {
     ...resp,
+    voted,
     id: messageId,
+    voter: [],
     createAt: resp.createAt.toDate().toISOString(),
     updateAt: resp.updateAt ? resp.updateAt.toDate().toISOString() : undefined,
   };
+}
+
+async function voteMessage({
+  uid,
+  instantEventId,
+  messageId,
+  voter,
+  isUpvote,
+}: {
+  uid: string;
+  instantEventId: string;
+  messageId: string;
+  voter: string;
+  isUpvote: boolean;
+}) {
+  const memberRef = FirebaseAdmin.getInstance().Firestore.collection(MEMBER_COLLECTION).doc(uid);
+  const eventRef = FirebaseAdmin.getInstance()
+    .Firestore.collection(MEMBER_COLLECTION)
+    .doc(uid)
+    .collection(INSTANT_EVENT)
+    .doc(instantEventId);
+  const messageRef = eventRef.collection(INSTANT_MESSAGE).doc(messageId);
+  await FirebaseAdmin.getInstance().Firestore.runTransaction(async (transaction) => {
+    const memberDoc = await transaction.get(memberRef);
+    const eventDoc = await transaction.get(eventRef);
+    const messageDoc = await transaction.get(messageRef);
+    // 존재하지 않는 사용자
+    if (memberDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 사용자' });
+    }
+    if (eventDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 이벤트' });
+    }
+    if (messageDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 메시지' });
+    }
+    const eventInfo = eventDoc.data() as InInstantEvent;
+    // 이미 폐쇄된 이벤트인가?
+    if (eventInfo.closed !== undefined && eventInfo.closed) {
+      throw new CustomServerError({ statusCode: 400, message: '종료된 이벤트' });
+    }
+    // 잠긴 이벤트인가?
+    if (eventInfo.locked !== undefined && eventInfo.locked) {
+      throw new CustomServerError({ statusCode: 400, message: '잠긴 이벤트' });
+    }
+    const messageData = messageDoc.data() as InInstantEventMessageServer;
+    // 이미 투표 했는지 확인
+    if (messageData.voter !== undefined && messageData.voter.findIndex((fv: string) => fv === voter) >= 0) {
+      throw new CustomServerError({ statusCode: 400, message: '이미 투표했습니다.' });
+    }
+    await transaction.update(messageRef, {
+      vote: FieldValue.increment(isUpvote ? 1 : -1),
+      voter: messageData.voter !== undefined ? [...messageData.voter, voter] : [voter],
+    });
+  });
 }
 
 async function postReply({
@@ -269,6 +382,16 @@ async function postReply({
     if (eventDoc.exists === false) {
       throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 이벤트의 정보를 조회 중' });
     }
+    // 이벤트 정보 확인
+    const eventInfo = eventDoc.data() as InInstantEvent;
+    // 이미 폐쇄된 이벤트인가?
+    if (eventInfo.closed !== undefined && eventInfo.closed) {
+      throw new CustomServerError({ statusCode: 400, message: '종료된 이벤트 ☠️' });
+    }
+    // 잠긴 이벤트인가?
+    if (eventInfo.locked !== undefined && eventInfo.locked) {
+      throw new CustomServerError({ statusCode: 400, message: '잠긴 이벤트 ☠️' });
+    }
     if (messageDoc.exists === false) {
       throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 메시지를 조회 중' });
     }
@@ -295,10 +418,12 @@ const InstantMessageModel = {
   findAllEvent,
   create,
   close,
+  lock,
   post,
   get,
   messageList,
   messageInfo,
+  voteMessage,
   postReply,
 };
 

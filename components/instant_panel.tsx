@@ -209,6 +209,16 @@ const InstantPanel = function ({ userInfo }: Props) {
           </Link>
         ))}
       </Box>
+      {eventList.length === 0 && (
+        <Box mt="6">
+          <img style={{ width: '50%', margin: '0 auto' }} src="/blahx2.svg" alt="hero" />
+          <Flex justify="center">
+            <Box mb="6" height="100vh" fontSize="sm">
+              즉석 질문 이벤트가 없어요.
+            </Box>
+          </Flex>
+        </Box>
+      )}
     </>
   );
 };

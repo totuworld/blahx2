@@ -6,30 +6,70 @@ import {
   Flex,
   FormControl,
   FormLabel,
+  Grid,
+  GridItem,
   Switch,
   Text,
   Textarea,
   useToast,
 } from '@chakra-ui/react';
+import { ArrowUpIcon, ArrowDownIcon } from '@chakra-ui/icons';
 import { useState } from 'react';
 import ResizeTextarea from 'react-textarea-autosize';
 import convertDateToString from '@/utils/convert_date_to_string';
 import { InInstantEventMessage } from '@/models/instant_message/interface/in_instant_event_message';
 import { useAuth } from '@/contexts/auth_user.context';
 import InstantMessageClientService from '@/controllers/instant_message/instant_msg.client.service';
+import HeartIcon from './heart_icon';
 
 interface Props {
   uid: string;
   instantEventId: string;
+  locked: boolean;
   item: InInstantEventMessage;
   onSendComplete: () => void;
 }
 
-const InstantMessageItem = function ({ uid, instantEventId, item, onSendComplete }: Props) {
+const InstantMessageItem = function ({ uid, instantEventId, item, onSendComplete, locked }: Props) {
   const { authUser } = useAuth();
   const [message, updateMessage] = useState('');
   const [isAnonymous, setAnonymous] = useState(true);
   const toast = useToast();
+
+  function sendVote(isUpvote: boolean, voted: boolean) {
+    if (voted === true) {
+      toast({
+        title: '이 의견은 이미 투표했습니다.',
+        status: 'warning',
+        position: 'top-right',
+      });
+      return;
+    }
+    if (authUser === null) {
+      toast({
+        title: '로그인이 필요합니다',
+        position: 'top-right',
+      });
+      return;
+    }
+    InstantMessageClientService.voteMessageInfo({
+      uid,
+      instantEventId,
+      messageId: item.id,
+      isUpvote,
+    }).then((resp) => {
+      if (resp.status !== 200 && resp.error !== undefined) {
+        toast({
+          title: (resp.error.data as { message: string }).message,
+          status: 'warning',
+          position: 'top-right',
+        });
+        return;
+      }
+      onSendComplete();
+    });
+  }
+
   return (
     <Box borderRadius="md" width="full" bg="white" boxShadow="md">
       <Box>
@@ -49,6 +89,59 @@ const InstantMessageItem = function ({ uid, instantEventId, item, onSendComplete
             {item.message}
           </Text>
         </Box>
+        {locked === false && (
+          <Grid
+            templateColumns="repeat(2, 1fr)"
+            gap={2}
+            width="full"
+            bg="white"
+            bottom="0"
+            zIndex="overlay"
+            padding="2"
+            borderColor="gray.300"
+          >
+            <GridItem w="100%">
+              <Button
+                fontSize="xs"
+                leftIcon={<ArrowUpIcon />}
+                width="full"
+                variant="ghost"
+                height="4"
+                color={item.voted ? 'gray.300' : 'black'}
+                _hover={{ bg: 'white' }}
+                _focus={{ bg: 'white' }}
+                onClick={() => {
+                  sendVote(true, item.voted);
+                }}
+              >
+                추천해요
+              </Button>
+            </GridItem>
+            <GridItem w="100%">
+              <Button
+                fontSize="xs"
+                leftIcon={<ArrowDownIcon />}
+                width="full"
+                variant="ghost"
+                height="4"
+                color={item.voted ? 'gray.300' : 'black'}
+                _hover={{ bg: 'white' }}
+                _focus={{ bg: 'white' }}
+                onClick={() => {
+                  sendVote(false, item.voted);
+                }}
+              >
+                다음에요
+              </Button>
+            </GridItem>
+          </Grid>
+        )}
+        {locked === true && (
+          <Box display="flex" alignItems="center" fontSize="xs" color="#F91880">
+            <HeartIcon />
+            {item.vote}
+          </Box>
+        )}
         <Box pt="2">
           <Divider />
           <Box display="flex" mt="2">
@@ -61,6 +154,7 @@ const InstantMessageItem = function ({ uid, instantEventId, item, onSendComplete
             </Box>
             <Box borderRadius="md" width="full" bg="gray.100" mr="2">
               <Textarea
+                disabled={locked}
                 border="none"
                 boxShadow="none !important"
                 resize="none"
@@ -77,7 +171,7 @@ const InstantMessageItem = function ({ uid, instantEventId, item, onSendComplete
               />
             </Box>
             <Button
-              disabled={message.length === 0}
+              disabled={message.length === 0 || locked === true}
               colorScheme="pink"
               bgColor="#FF75B5"
               variant="solid"

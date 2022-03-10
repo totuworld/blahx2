@@ -13,6 +13,9 @@ import JSCInstantEventMessageInfoReq from './JSONSchema/JSCInstantEventMessageIn
 import JSCPostInstantEventMessageReplyReq from './JSONSchema/JSCPostInstantEventMessageReplyReq';
 import JSCFindAllInstantEventReq from './JSONSchema/JSCFindAllInstantEventReq';
 import JSCCloseInstantEventReq from './JSONSchema/JSCCloseInstantEventReq';
+import checkEmptyToken from '../check_empty_token';
+import verifyFirebaseIdToken from '../verify_firebase_id_token';
+import JSCVoteInstantEventMessageReq from './JSONSchema/JSCVoteInstantEventMessageReq';
 
 async function create(req: NextApiRequest, res: NextApiResponse) {
   const validateResp = validateParamWithData<CreateInstantEventReq>(
@@ -60,6 +63,21 @@ async function get(req: NextApiRequest, res: NextApiResponse) {
   return res.status(200).json(instantEventInfo);
 }
 
+async function lock(req: NextApiRequest, res: NextApiResponse) {
+  const validateResp = validateParamWithData<{ body: { uid: string; instantEventId: string } }>(
+    {
+      body: req.body,
+    },
+    JSCCloseInstantEventReq,
+  );
+  if (validateResp.result === false) {
+    throw new BadReqError(validateResp.errorMessage);
+  }
+  const { uid, instantEventId } = validateResp.data.body;
+  await InstantMessageModel.lock({ uid, instantEventId });
+  return res.status(200).end();
+}
+
 async function close(req: NextApiRequest, res: NextApiResponse) {
   const validateResp = validateParamWithData<{ body: { uid: string; instantEventId: string } }>(
     {
@@ -90,6 +108,11 @@ async function post(req: NextApiRequest, res: NextApiResponse) {
 }
 
 async function messageList(req: NextApiRequest, res: NextApiResponse) {
+  const token = req.headers.authorization;
+  let senderUid: string | undefined;
+  if (token !== undefined) {
+    senderUid = await verifyFirebaseIdToken(token);
+  }
   const validateResp = validateParamWithData<{
     query: {
       uid: string;
@@ -104,11 +127,16 @@ async function messageList(req: NextApiRequest, res: NextApiResponse) {
   if (validateResp.result === false) {
     throw new BadReqError(validateResp.errorMessage);
   }
-  const result = await InstantMessageModel.messageList({ ...validateResp.data.query });
+  const result = await InstantMessageModel.messageList({ ...validateResp.data.query, currentUserUid: senderUid });
   return res.status(200).json(result);
 }
 
 async function getMessageInfo(req: NextApiRequest, res: NextApiResponse) {
+  const token = req.headers.authorization;
+  let senderUid: string | undefined;
+  if (token !== undefined) {
+    senderUid = await verifyFirebaseIdToken(token);
+  }
   const validateResp = validateParamWithData<{
     query: {
       uid: string;
@@ -124,8 +152,31 @@ async function getMessageInfo(req: NextApiRequest, res: NextApiResponse) {
   if (validateResp.result === false) {
     throw new BadReqError(validateResp.errorMessage);
   }
-  const result = await InstantMessageModel.messageInfo({ ...validateResp.data.query });
+  const result = await InstantMessageModel.messageInfo({ ...validateResp.data.query, currentUserUid: senderUid });
   return res.status(200).json(result);
+}
+
+async function voteMessage(req: NextApiRequest, res: NextApiResponse) {
+  const token = checkEmptyToken(req.headers.authorization);
+  const senderUid = await verifyFirebaseIdToken(token);
+  const validateResp = validateParamWithData<{
+    body: {
+      uid: string;
+      instantEventId: string;
+      messageId: string;
+      isUpvote: boolean;
+    };
+  }>(
+    {
+      body: req.body,
+    },
+    JSCVoteInstantEventMessageReq,
+  );
+  if (validateResp.result === false) {
+    throw new BadReqError(validateResp.errorMessage);
+  }
+  await InstantMessageModel.voteMessage({ ...validateResp.data.body, voter: senderUid });
+  return res.status(200).end();
 }
 
 async function postReply(req: NextApiRequest, res: NextApiResponse) {
@@ -160,10 +211,12 @@ const InstantMessageCtrl = {
   findAllEvent,
   create,
   get,
+  lock,
   close,
   post,
   messageList,
   getMessageInfo,
+  voteMessage,
   postReply,
 };
 

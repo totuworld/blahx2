@@ -1,7 +1,22 @@
 import { GetServerSideProps, NextPage } from 'next';
-import { Avatar, Box, Flex, Tab, TabList, TabPanel, TabPanels, Tabs, Text } from '@chakra-ui/react';
+import {
+  Avatar,
+  Box,
+  Button,
+  Flex,
+  Grid,
+  GridItem,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  Text,
+} from '@chakra-ui/react';
+import { ChevronRightIcon } from '@chakra-ui/icons';
 import Head from 'next/head';
 import getConfig from 'next/config';
+import { useState } from 'react';
 import { InMemberInfo } from '@/models/member/in_member_info';
 import getStringValueFromQuery from '@/utils/get_value_from_query';
 import { memberFindByScreenNameForClient } from '@/models/member/member.client.service';
@@ -23,6 +38,7 @@ interface Props {
 }
 
 const UserHomePage: NextPage<Props> = function ({ userInfo }) {
+  const [currentMenu, setCurrentMenu] = useState(0);
   const { publicRuntimeConfig } = getConfig();
   if (userInfo === null) {
     return <p>사용자를 찾을 수 없습니다.</p>;
@@ -31,6 +47,7 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
   return (
     <>
       <Head>
+        <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover" />
         <meta property="og:url" content={mainUrl} />
         <meta property="og:image" content={`https://${publicRuntimeConfig.mainDomain}/main.jpg`} />
         <meta property="og:site_name" content="blahX2" />
@@ -44,7 +61,7 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
         <meta name="twitter:url" content={mainUrl} />
         <meta name="twitter:domain" content={publicRuntimeConfig.mainDomain} />
       </Head>
-      <ServiceLayout backgroundColor="gray.200">
+      <ServiceLayout minHeight="100vh" backgroundColor="gray.200">
         <Box maxW="md" mx="auto" pt="6">
           <Box borderWidth="1px" borderRadius="lg" overflow="hidden" mb="4" bg="white">
             <Box display="flex" p="6">
@@ -55,12 +72,51 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
               </Flex>
             </Box>
           </Box>
-          <Tabs isFitted variant="soft-rounded">
-            <TabList>
-              <Tab>상시 질문</Tab>
-              <Tab>즉석 목록</Tab>
-            </TabList>
-            <TabPanels>
+          <Grid
+            templateColumns="repeat(2, 1fr)"
+            gap={2}
+            width="full"
+            position={{ base: 'fixed', md: 'relative' }}
+            bg="white"
+            bottom="0"
+            zIndex="overlay"
+            padding="2"
+            borderTop={{ base: '1px', md: '0' }}
+            borderColor="gray.300"
+          >
+            <GridItem w="100%" h="10">
+              <Button
+                width="full"
+                variant="ghost"
+                color={currentMenu === 0 ? 'black' : 'gray.500'}
+                leftIcon={currentMenu === 0 ? <ChevronRightIcon /> : undefined}
+                _hover={{ bg: 'white' }}
+                _focus={{ bg: 'white' }}
+                onClick={() => {
+                  setCurrentMenu(0);
+                }}
+              >
+                상시 질문
+              </Button>
+            </GridItem>
+            <GridItem w="100%" h="10">
+              <Button
+                width="full"
+                variant="ghost"
+                color={currentMenu === 1 ? 'black' : 'gray.500'}
+                leftIcon={currentMenu === 1 ? <ChevronRightIcon /> : undefined}
+                _hover={{ bg: 'white' }}
+                _focus={{ bg: 'white' }}
+                onClick={() => {
+                  setCurrentMenu(1);
+                }}
+              >
+                즉석 목록
+              </Button>
+            </GridItem>
+          </Grid>
+          <Tabs isFitted variant="soft-rounded" index={currentMenu}>
+            <TabPanels pb={{ base: 12, md: 0 }}>
               <TabPanel px="0">
                 <DefaultPanel userInfo={userInfo} />
               </TabPanel>

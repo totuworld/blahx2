@@ -196,7 +196,7 @@ const DefaultPanel = function ({ userInfo }: Props) {
         <Box mt="6">
           <img style={{ width: '50%', margin: '0 auto' }} src="/blahx2.svg" alt="hero" />
           <Flex justify="center">
-            <Box mb="6" height="100vh" fontSize="xs">
+            <Box mb="6" height="100vh" fontSize="sm">
               첫 질문을 남겨보세요
             </Box>
           </Flex>

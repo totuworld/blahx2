@@ -1,20 +1,5 @@
 import { GetServerSideProps, NextPage } from 'next';
-import {
-  Avatar,
-  Box,
-  Button,
-  Flex,
-  IconButton,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuList,
-  Spacer,
-  Text,
-  Textarea,
-  useToast,
-  VStack,
-} from '@chakra-ui/react';
+import { Avatar, Box, Button, Flex, Textarea, useToast, VStack } from '@chakra-ui/react';
 import { ChevronLeftIcon } from '@chakra-ui/icons';
 import Link from 'next/link';
 import ResizeTextarea from 'react-textarea-autosize';
@@ -31,7 +16,9 @@ import InstantMessageItem from '@/components/instant_message_item';
 import { getBaseUrl } from '@/utils/get_base_url';
 import getStringValueFromQuery from '@/utils/get_value_from_query';
 import { memberFindByScreenNameForClient } from '@/models/member/member.client.service';
-import ExtraMenuIcon from '@/components/extra_menu_icon';
+import InstantInfo from '@/components/instant/instant_info';
+import FirebaseAuthClient from '@/models/auth/firebase_auth_client';
+import { useAuth } from '@/contexts/auth_user.context';
 
 interface Props {
   host: string;
@@ -64,26 +51,9 @@ async function postMessage({ message, uid, instantEventId }: { message: string; 
   }
 }
 
-async function closeEvent({ uid, instantEventId }: { uid: string; instantEventId: string }) {
-  try {
-    await InstantMessageClientService.close({
-      uid,
-      instantEventId,
-    });
-    return {
-      result: true,
-    };
-  } catch (err) {
-    console.error(err);
-    return {
-      result: false,
-      message: '이벤트 종료 실패',
-    };
-  }
-}
-
 const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEventInfo: propsEventInfo }) {
   const toast = useToast();
+  const { authUser } = useAuth();
   const [message, updateMessage] = useState('');
   const [instantEventInfo, setInstantEventInfo] = useState(propsEventInfo);
   const [messageList, setMessageList] = useState<InInstantEventMessage[]>([]);
@@ -91,6 +61,14 @@ const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEvent
   const eventState = (() => {
     if (instantEventInfo === null) {
       return 'none';
+    }
+    if (
+      instantEventInfo.locked !== undefined &&
+      instantEventInfo.locked === true &&
+      instantEventInfo.closed === false
+    ) {
+      // 잠긴경우
+      return 'locked';
     }
     if (instantEventInfo.closed === true) {
       // 완전히 종료된 경우
@@ -110,16 +88,25 @@ const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEvent
     return 'pre';
   })();
 
-  const messageListQueryKey = ['instantMessageList', userInfo?.uid, instantEventInfo?.instantEventId];
+  const messageListQueryKey = ['instantMessageList', userInfo?.uid, instantEventInfo?.instantEventId, authUser];
   useQuery(
     messageListQueryKey,
-    async () =>
-      // eslint-disable-next-line no-return-await
-      await axios.get<InInstantEventMessage[]>(
+    async () => {
+      const token = await FirebaseAuthClient.getInstance().Auth.currentUser?.getIdToken();
+      const resp = await axios.get<InInstantEventMessage[]>(
         `/api/instant-event.messages.list/${userInfo?.uid}/${instantEventInfo?.instantEventId}`,
-      ),
+        {
+          headers: token
+            ? {
+                authorization: token,
+              }
+            : {},
+        },
+      );
+      return resp;
+    },
     {
-      enabled: eventState === 'reply',
+      enabled: eventState === 'reply' || eventState === 'locked',
       keepPreviousData: true,
       refetchOnWindowFocus: false,
       onSuccess: (data) => {
@@ -134,8 +121,6 @@ const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEvent
     return <p>사용자를 찾을 수 없습니다.</p>;
   }
 
-  const endDate = moment(instantEventInfo.endDate, moment.ISO_8601);
-
   return (
     <ServiceLayout height="100vh" backgroundColor="gray.200">
       <Box maxW="md" mx="auto" pt="6">
@@ -147,62 +132,24 @@ const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEvent
           </a>
         </Link>
         <Box borderWidth="1px" borderRadius="lg" bg="white" p="6">
-          <Flex>
-            <Spacer />
-            <Menu>
-              <MenuButton
-                as={IconButton}
-                aria-label="Options"
-                icon={<ExtraMenuIcon />}
-                borderRadius="full"
-                variant="solid"
-                size="xs"
-                _focus={{ boxShadow: 'none' }}
-              />
-              <MenuList>
-                <MenuItem
-                  bgColor="red.300"
-                  textColor="white"
-                  _hover={{ bg: 'red.500' }}
-                  _focus={{ bg: 'red.500' }}
-                  onClick={() => {
-                    closeEvent({ uid: userInfo.uid, instantEventId: instantEventInfo.instantEventId })
-                      .then(() =>
-                        InstantMessageClientService.get({
-                          uid: userInfo.uid,
-                          instantEventId: instantEventInfo.instantEventId,
-                        }),
-                      )
-                      .then((resp) => {
-                        if (resp.status === 200 && resp.payload) {
-                          setInstantEventInfo(resp.payload);
-                        }
-                      })
-                      .catch((err) => {
-                        console.error(err);
-                      });
-                  }}
-                >
-                  즉석 질문 이벤트 종료처리
-                </MenuItem>
-              </MenuList>
-            </Menu>
-          </Flex>
-          <Flex justify="center" mt={-14}>
-            <Avatar
-              size="lg"
-              src={userInfo.photoURL?.replace('_normal', '')}
-              css={{
-                border: '2px solid white',
-              }}
-            />
-          </Flex>
-          <Text fontSize="md">{instantEventInfo?.title}</Text>
-          <Text fontSize="xs">{instantEventInfo?.desc}</Text>
-          {eventState === 'question' && <Text fontSize="xs">{endDate.format('YYYY-MM-DD hh:mm')}까지 질문 가능</Text>}
+          <InstantInfo
+            userInfo={userInfo}
+            instantEventInfo={instantEventInfo}
+            eventState={eventState}
+            onCompleteLockOrClose={() => {
+              InstantMessageClientService.get({
+                uid: userInfo.uid,
+                instantEventId: instantEventInfo.instantEventId,
+              }).then((resp) => {
+                if (resp.status === 200 && resp.payload) {
+                  setInstantEventInfo(resp.payload);
+                }
+              });
+            }}
+          />
         </Box>
         {eventState === 'question' && (
-          <Box borderWidth="1px" borderRadius="lg" p="2" overflow="hidden" bg="white">
+          <Box borderWidth="1px" borderRadius="lg" p="2" overflow="hidden" bg="white" mt="6">
             <Flex>
               <Box pt="1" pr="2">
                 <Avatar size="xs" src="https://bit.ly/broken-link" />
@@ -264,7 +211,7 @@ const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEvent
             </Flex>
           </Box>
         )}
-        {eventState === 'reply' && (
+        {(eventState === 'reply' || eventState === 'locked') && (
           <VStack spacing="12px" mt="6">
             {messageList.map((item) => (
               <InstantMessageItem
@@ -272,6 +219,7 @@ const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEvent
                 uid={userInfo.uid}
                 instantEventId={instantEventInfo.instantEventId}
                 item={item}
+                locked={eventState === 'locked'}
                 onSendComplete={() => {
                   console.info('send complete');
                   InstantMessageClientService.getMessageInfo({
