@@ -1,16 +1,4 @@
-import {
-  Avatar,
-  Box,
-  Center,
-  Flex,
-  IconButton,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuList,
-  Spacer,
-  Text,
-} from '@chakra-ui/react';
+import { Avatar, Center, Flex, IconButton, Menu, MenuButton, MenuItem, MenuList, Spacer, Text } from '@chakra-ui/react';
 import moment from 'moment';
 import InstantMessageClientService from '@/controllers/instant_message/instant_msg.client.service';
 import ExtraMenuIcon from '../extra_menu_icon';

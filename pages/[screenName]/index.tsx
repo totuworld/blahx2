@@ -1,18 +1,5 @@
 import { GetServerSideProps, NextPage } from 'next';
-import {
-  Avatar,
-  Box,
-  Button,
-  Flex,
-  Grid,
-  GridItem,
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Tabs,
-  Text,
-} from '@chakra-ui/react';
+import { Avatar, Box, Button, Flex, Grid, GridItem, TabPanel, TabPanels, Tabs, Text } from '@chakra-ui/react';
 import { ChevronRightIcon } from '@chakra-ui/icons';
 import Head from 'next/head';
 import getConfig from 'next/config';
