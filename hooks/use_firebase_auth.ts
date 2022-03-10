@@ -56,22 +56,25 @@ export default function useFirebaseAuth() {
 
       if (signInResult.user) {
         console.log(signInResult.user);
-        // const idToken = await signInResult.user.getIdToken();
-        // const findResp = await memberFind({ member_id: signInResult.user.uid, isServer: false });
-        // if (!(findResp.status === 200 && findResp.payload && findResp.payload.uid === signInResult.user.uid)) {
-        //   const { uid, displayName, email, photoURL } = signInResult.user;
-        //   const data: InMemberInfo = {
-        //     uid,
-        //     displayName: displayName || undefined,
-        //     email: email || undefined,
-        //     photoURL: photoURL || undefined,
-        //   };
-        //   await memberAdd({
-        //     data,
-        //     token: idToken,
-        //     isServer: false,
-        //   });
-        // }
+        const idToken = await signInResult.user.getIdToken();
+        const { uid, displayName, photoURL, email } = signInResult.user;
+        // uid
+        // photoURL
+        // displayName
+        const resp = await memberAddForClient({
+          data: {
+            uid,
+            displayName: displayName || undefined,
+            email: email!,
+            screenName: email!.split('@')[0],
+            photoURL: photoURL || undefined,
+            provider: 'google',
+          },
+          token: idToken,
+        });
+        if (resp.status === 200 && resp.payload) {
+          window.location.href = resp.payload;
+        }
       }
     } catch (err) {
       console.error(err);
