@@ -1,8 +1,8 @@
 import { NextPage } from 'next';
-import { Box, Button, Center, Heading, Flex, Text } from '@chakra-ui/react';
-import { FaTwitter } from 'react-icons/fa';
+import { Box, Center, Heading, Flex, Text } from '@chakra-ui/react';
 import { ServiceLayout } from '@/components/containers/service_layout';
 import { useAuth } from '@/contexts/auth_user.context';
+import TwitterLoginButton from '@/components/twitter_login_button';
 
 const IndexPage: NextPage = function () {
   const { signInWithTwitter } = useAuth();
@@ -19,35 +19,7 @@ const IndexPage: NextPage = function () {
           </Box>
         </Center>
       </Box>
-      <Box width="full" pb="10" display={{ md: 'block', base: 'none' }}>
-        <Center>
-          <Button
-            size="lg"
-            mx="6"
-            borderRadius="full"
-            leftIcon={<FaTwitter />}
-            colorScheme="twitter"
-            onClick={signInWithTwitter}
-          >
-            Twitter 계정으로 로그인
-          </Button>
-        </Center>
-      </Box>
-      <Box position="fixed" width="full" bottom="10" pb="10" display={{ md: 'none' }}>
-        <Center>
-          <Button
-            size="lg"
-            width="full"
-            mx="6"
-            borderRadius="full"
-            leftIcon={<FaTwitter />}
-            colorScheme="twitter"
-            onClick={signInWithTwitter}
-          >
-            Twitter 계정으로 로그인
-          </Button>
-        </Center>
-      </Box>
+      <TwitterLoginButton isStart={false} onClickLogin={signInWithTwitter} />
     </ServiceLayout>
   );
 };
