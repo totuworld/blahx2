@@ -2,10 +2,10 @@ import { NextPage } from 'next';
 import { Box, Center, Heading, Flex, Text } from '@chakra-ui/react';
 import { ServiceLayout } from '@/components/containers/service_layout';
 import { useAuth } from '@/contexts/auth_user.context';
-import TwitterLoginButton from '@/components/twitter_login_button';
+import GoogleLoginButton from '@/components/google_login_button';
 
 const IndexPage: NextPage = function () {
-  const { signInWithTwitter } = useAuth();
+  const { signInWithGoogle } = useAuth();
   return (
     <ServiceLayout height="100vh" backgroundColor="gray.50">
       <Box maxW="md" mx="auto">
@@ -19,7 +19,7 @@ const IndexPage: NextPage = function () {
           </Box>
         </Center>
       </Box>
-      <TwitterLoginButton isStart={false} onClickLogin={signInWithTwitter} />
+      <GoogleLoginButton isStart={false} onClickLogin={signInWithGoogle} />
     </ServiceLayout>
   );
 };

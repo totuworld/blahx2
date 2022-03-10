@@ -4,7 +4,7 @@ import getConfig from 'next/config';
 import Head from 'next/head';
 import { ServiceLayout } from '@/components/containers/service_layout';
 import { useAuth } from '@/contexts/auth_user.context';
-import TwitterLoginButton from '@/components/twitter_login_button';
+import GoogleLoginButton from '@/components/google_login_button';
 
 /** 최초 진입 페이지
  *
@@ -15,7 +15,7 @@ import TwitterLoginButton from '@/components/twitter_login_button';
 const IndexPage: NextPage = function () {
   const { publicRuntimeConfig } = getConfig();
   const mainUrl = `https://${publicRuntimeConfig.mainDomain}`;
-  const { signInWithTwitter } = useAuth();
+  const { signInWithGoogle } = useAuth();
   return (
     <>
       <Head>
@@ -43,7 +43,7 @@ const IndexPage: NextPage = function () {
             </Box>
           </Center>
         </Box>
-        <TwitterLoginButton isStart onClickLogin={signInWithTwitter} />
+        <GoogleLoginButton isStart onClickLogin={signInWithGoogle} />
       </ServiceLayout>
     </>
   );
