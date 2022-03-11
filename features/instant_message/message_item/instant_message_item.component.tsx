@@ -4,23 +4,26 @@ import {
   Button,
   Divider,
   Flex,
-  FormControl,
-  FormLabel,
   Grid,
   GridItem,
-  Switch,
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
+  Spacer,
   Text,
-  Textarea,
   useToast,
 } from '@chakra-ui/react';
 import { ArrowUpIcon, ArrowDownIcon } from '@chakra-ui/icons';
-import { useState } from 'react';
-import ResizeTextarea from 'react-textarea-autosize';
 import convertDateToString from '@/utils/convert_date_to_string';
 import { InInstantEventMessage } from '@/models/instant_message/interface/in_instant_event_message';
 import { useAuth } from '@/contexts/auth_user.context';
 import InstantMessageClientService from '@/controllers/instant_message/instant_msg.client.service';
-import HeartIcon from './heart_icon';
+import ExtraMenuIcon from '@/components/extra_menu_icon';
+import HeartIcon from '@/components/heart_icon';
+import InstantMessageItemReplyInput from './reply_input.component';
+import InstantEventMessageReply from './reply.component';
 
 interface Props {
   uid: string;
@@ -32,9 +35,8 @@ interface Props {
 
 const InstantMessageItem = function ({ uid, instantEventId, item, onSendComplete, locked }: Props) {
   const { authUser } = useAuth();
-  const [message, updateMessage] = useState('');
-  const [isAnonymous, setAnonymous] = useState(true);
   const toast = useToast();
+  const isOwner = authUser !== null && authUser.uid === uid;
 
   function sendVote(isUpvote: boolean, voted: boolean) {
     if (voted === true) {
@@ -70,10 +72,35 @@ const InstantMessageItem = function ({ uid, instantEventId, item, onSendComplete
     });
   }
 
+  function denyMessage() {
+    if (authUser === null) {
+      toast({
+        title: '로그인이 필요합니다',
+        position: 'top-right',
+      });
+      return;
+    }
+    InstantMessageClientService.denyMessage({
+      uid,
+      instantEventId,
+      messageId: item.id,
+    }).then((resp) => {
+      if (resp.status !== 200 && resp.error !== undefined) {
+        toast({
+          title: (resp.error.data as { message: string }).message,
+          status: 'warning',
+          position: 'top-right',
+        });
+        return;
+      }
+      onSendComplete();
+    });
+  }
+
   return (
     <Box borderRadius="md" width="full" bg="white" boxShadow="md">
       <Box>
-        <Flex pl="2" pt="2" alignItems="center">
+        <Flex px="2" pt="2" alignItems="center">
           <Avatar size="xs" src="https://bit.ly/broken-link" />
           <Text fontSize="xx-small" ml="1">
             anonymous
@@ -81,6 +108,35 @@ const InstantMessageItem = function ({ uid, instantEventId, item, onSendComplete
           <Text whiteSpace="pre-line" fontSize="xx-small" color="gray.500" ml="1">
             {convertDateToString(item.createAt)}
           </Text>
+          <Spacer />
+          {isOwner && item.deny === undefined && (
+            <Menu>
+              <MenuButton
+                width="24px"
+                height="24px"
+                as={IconButton}
+                aria-label="Options"
+                icon={<ExtraMenuIcon />}
+                borderRadius="full"
+                variant="link"
+                size="xs"
+                _focus={{ boxShadow: 'none' }}
+              />
+              <MenuList>
+                <MenuItem
+                  bgColor="red.300"
+                  textColor="white"
+                  _hover={{ bg: 'red.500' }}
+                  _focus={{ bg: 'red.500' }}
+                  onClick={() => {
+                    denyMessage();
+                  }}
+                >
+                  Deny
+                </MenuItem>
+              </MenuList>
+            </Menu>
+          )}
         </Flex>
       </Box>
       <Box p="2">
@@ -89,7 +145,7 @@ const InstantMessageItem = function ({ uid, instantEventId, item, onSendComplete
             {item.message}
           </Text>
         </Box>
-        {locked === false && (
+        {locked === false && item.deny === undefined && (
           <Grid
             templateColumns="repeat(2, 1fr)"
             gap={2}
@@ -144,80 +200,15 @@ const InstantMessageItem = function ({ uid, instantEventId, item, onSendComplete
         )}
         <Box pt="2">
           <Divider />
-          <Box display="flex" mt="2">
-            <Box pt="1">
-              <Avatar
-                size="xs"
-                src={isAnonymous ? 'https://bit.ly/broken-link' : authUser?.photoURL ?? 'https://bit.ly/broken-link'}
-                mr="2"
-              />
-            </Box>
-            <Box borderRadius="md" width="full" bg="gray.100" mr="2">
-              <Textarea
-                disabled={locked}
-                border="none"
-                boxShadow="none !important"
-                resize="none"
-                minH="unset"
-                minRows={1}
-                overflow="hidden"
-                fontSize="xs"
-                as={ResizeTextarea}
-                placeholder="댓글을 입력하세요..."
-                value={message}
-                onChange={(e) => {
-                  updateMessage(e.target.value);
-                }}
-              />
-            </Box>
-            <Button
-              disabled={message.length === 0 || locked === true}
-              colorScheme="pink"
-              bgColor="#FF75B5"
-              variant="solid"
-              size="sm"
-              // borderRadius="full"
-              onClick={() => {
-                InstantMessageClientService.postReply({
-                  uid,
-                  instantEventId,
-                  messageId: item.id,
-                  reply: message,
-                  author:
-                    isAnonymous === false
-                      ? { displayName: authUser?.displayName ?? '', photoURL: authUser?.photoURL ?? undefined }
-                      : undefined,
-                }).then(() => {
-                  updateMessage('');
-                  onSendComplete();
-                });
-              }}
-            >
-              등록
-            </Button>
-          </Box>
-          <FormControl display="flex" alignItems="center" mt="1">
-            <Switch
-              size="sm"
-              colorScheme="orange"
-              id="anonymous"
-              mr="1"
-              isChecked={isAnonymous}
-              onChange={() => {
-                if (authUser === null) {
-                  toast({
-                    title: '로그인이 필요합니다',
-                    position: 'top-right',
-                  });
-                  return;
-                }
-                setAnonymous((prev) => !prev);
-              }}
+          {item.deny === undefined && (
+            <InstantMessageItemReplyInput
+              uid={uid}
+              instantEventId={instantEventId}
+              messageId={item.id}
+              locked={locked}
+              onSendComplete={onSendComplete}
             />
-            <FormLabel htmlFor="anonymous" mb="0" fontSize="xx-small">
-              Anonymous
-            </FormLabel>
-          </FormControl>
+          )}
         </Box>
         <Box>
           {item.reply &&
@@ -225,30 +216,11 @@ const InstantMessageItem = function ({ uid, instantEventId, item, onSendComplete
             item.reply.map((replyItem, idx) => (
               <Box pt="2">
                 {idx === 0 && <Divider />}
-                <Box display="flex" mt="2">
-                  <Box pt="2">
-                    <Avatar
-                      size="xs"
-                      src={
-                        replyItem.author
-                          ? replyItem.author.photoURL ?? 'https://bit.ly/broken-link'
-                          : 'https://bit.ly/broken-link'
-                      }
-                      mr="2"
-                    />
-                  </Box>
-                  <Box borderRadius="md" p="2" width="full" bg="gray.100">
-                    <Flex alignItems="center">
-                      <Text fontSize="xs">{replyItem.author ? replyItem.author.displayName : 'anonymous'}</Text>
-                      <Text whiteSpace="pre-line" fontSize="xs" color="gray">
-                        {convertDateToString(replyItem.createAt)}
-                      </Text>
-                    </Flex>
-                    <Text whiteSpace="pre-line" fontSize="xs">
-                      {replyItem.reply}
-                    </Text>
-                  </Box>
-                </Box>
+                <InstantEventMessageReply
+                  // eslint-disable-next-line react/no-array-index-key
+                  key={`instant-event-msg-reply-${uid}-${instantEventId}-${item.id}-${idx}`}
+                  replyItem={replyItem}
+                />
               </Box>
             ))}
         </Box>

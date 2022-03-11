@@ -12,10 +12,11 @@ import JSCInstantEventMessageListReq from './JSONSchema/JSCInstantEventMessageLi
 import JSCInstantEventMessageInfoReq from './JSONSchema/JSCInstantEventMessageInfoReq';
 import JSCPostInstantEventMessageReplyReq from './JSONSchema/JSCPostInstantEventMessageReplyReq';
 import JSCFindAllInstantEventReq from './JSONSchema/JSCFindAllInstantEventReq';
-import JSCCloseInstantEventReq from './JSONSchema/JSCCloseInstantEventReq';
 import checkEmptyToken from '../check_empty_token';
 import verifyFirebaseIdToken from '../verify_firebase_id_token';
 import JSCVoteInstantEventMessageReq from './JSONSchema/JSCVoteInstantEventMessageReq';
+import JSCDenyInstantEventMessageReq from './JSONSchema/JSCDenyInstantEventMessageReq';
+import JSCCloseInstantEventReq from './JSONSchema/JSCCloseInstantEventReq';
 
 async function create(req: NextApiRequest, res: NextApiResponse) {
   const validateResp = validateParamWithData<CreateInstantEventReq>(
@@ -93,6 +94,21 @@ async function close(req: NextApiRequest, res: NextApiResponse) {
   return res.status(200).end();
 }
 
+async function closeSendMessage(req: NextApiRequest, res: NextApiResponse) {
+  const validateResp = validateParamWithData<{ body: { uid: string; instantEventId: string } }>(
+    {
+      body: req.body,
+    },
+    JSCCloseInstantEventReq,
+  );
+  if (validateResp.result === false) {
+    throw new BadReqError(validateResp.errorMessage);
+  }
+  const { uid, instantEventId } = validateResp.data.body;
+  await InstantMessageModel.closeSendMessage({ uid, instantEventId });
+  return res.status(200).end();
+}
+
 async function post(req: NextApiRequest, res: NextApiResponse) {
   const validateResp = validateParamWithData<PostInstantEventMessageReq>(
     {
@@ -156,6 +172,32 @@ async function getMessageInfo(req: NextApiRequest, res: NextApiResponse) {
   return res.status(200).json(result);
 }
 
+async function denyMessage(req: NextApiRequest, res: NextApiResponse) {
+  const token = checkEmptyToken(req.headers.authorization);
+  const uid = await verifyFirebaseIdToken(token);
+  const validateResp = validateParamWithData<{
+    body: {
+      uid: string;
+      instantEventId: string;
+      messageId: string;
+    };
+  }>(
+    {
+      body: req.body,
+    },
+    JSCDenyInstantEventMessageReq,
+  );
+  if (validateResp.result === false) {
+    throw new BadReqError(validateResp.errorMessage);
+  }
+  // 즉석 이벤트를 만든 사람이 아니면 deny 못하게 한다.
+  if (uid !== validateResp.data.body.uid) {
+    throw new BadReqError('deny할 권한이 없습니다.');
+  }
+  const result = await InstantMessageModel.denyMessage({ ...validateResp.data.body });
+  return res.status(200).json(result);
+}
+
 async function voteMessage(req: NextApiRequest, res: NextApiResponse) {
   const token = checkEmptyToken(req.headers.authorization);
   const senderUid = await verifyFirebaseIdToken(token);
@@ -214,8 +256,10 @@ const InstantMessageCtrl = {
   lock,
   close,
   post,
+  closeSendMessage,
   messageList,
   getMessageInfo,
+  denyMessage,
   voteMessage,
   postReply,
 };

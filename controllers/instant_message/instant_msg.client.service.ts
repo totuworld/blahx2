@@ -109,6 +109,33 @@ async function close({ uid, instantEventId }: { uid: string; instantEventId: str
   }
 }
 
+async function immediateClosSendMessagePeriod({
+  uid,
+  instantEventId,
+}: {
+  uid: string;
+  instantEventId: string;
+}): Promise<Resp<unknown>> {
+  const url = '/api/instant-event.close-send-message';
+  try {
+    const resp = await requester({
+      option: {
+        url,
+        method: 'PUT',
+        data: {
+          uid,
+          instantEventId,
+        },
+      },
+    });
+    return resp;
+  } catch (err) {
+    return {
+      status: 500,
+    };
+  }
+}
+
 async function post({
   uid,
   instantEventId,
@@ -212,6 +239,37 @@ async function getMessageInfo({
     };
   }
 }
+
+async function denyMessage({
+  uid,
+  instantEventId,
+  messageId,
+}: {
+  uid: string;
+  instantEventId: string;
+  messageId: string;
+}): Promise<Resp<void>> {
+  const url = '/api/instant-event.messages.deny';
+  const token = await FirebaseAuthClient.getInstance().Auth.currentUser?.getIdToken();
+  try {
+    await requester<InInstantEventMessage>({
+      option: {
+        url,
+        method: 'PUT',
+        headers: {
+          authorization: token ?? '',
+        },
+        data: { uid, instantEventId, messageId },
+      },
+    });
+    return { status: 200 };
+  } catch (err) {
+    return {
+      status: 500,
+    };
+  }
+}
+
 async function voteMessageInfo({
   uid,
   instantEventId,
@@ -223,7 +281,7 @@ async function voteMessageInfo({
   messageId: string;
   isUpvote?: boolean;
 }): Promise<Resp<InInstantEventMessage>> {
-  const url = '/api/instant-event.message.vote';
+  const url = '/api/instant-event.messages.vote';
   const token = await FirebaseAuthClient.getInstance().Auth.currentUser?.getIdToken();
   try {
     const resp = await requester<InInstantEventMessage>({
@@ -247,6 +305,8 @@ async function voteMessageInfo({
 const InstantMessageClientService = {
   create,
   get,
+  immediateClosSendMessagePeriod,
+  denyMessage,
   lock,
   voteMessageInfo,
   close,

@@ -12,13 +12,13 @@ import { ServiceLayout } from '@/components/containers/service_layout';
 import { InInstantEvent } from '@/models/instant_message/interface/in_instant_event';
 import InstantMessageClientService from '@/controllers/instant_message/instant_msg.client.service';
 import { InInstantEventMessage } from '@/models/instant_message/interface/in_instant_event_message';
-import InstantMessageItem from '@/components/instant_message_item';
 import { getBaseUrl } from '@/utils/get_base_url';
 import getStringValueFromQuery from '@/utils/get_value_from_query';
 import { memberFindByScreenNameForClient } from '@/models/member/member.client.service';
-import InstantInfo from '@/components/instant/instant_info';
+import InstantInfo from '@/features/instant_message/header/instant_info.component';
 import FirebaseAuthClient from '@/models/auth/firebase_auth_client';
 import { useAuth } from '@/contexts/auth_user.context';
+import InstantMessageItem from '@/features/instant_message/message_item/instant_message_item.component';
 
 interface Props {
   host: string;

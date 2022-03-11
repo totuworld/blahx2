@@ -9,7 +9,7 @@ import getStringValueFromQuery from '@/utils/get_value_from_query';
 import { memberFindByScreenNameForClient } from '@/models/member/member.client.service';
 import { ServiceLayout } from '@/components/containers/service_layout';
 import DefaultPanel from '@/components/default_panel';
-import InstantPanel from '@/components/instant_panel';
+import InstantPanel from '@/features/instant_message/instant_panel';
 
 /**
  * 각 사용자의 home

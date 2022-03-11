@@ -150,6 +150,30 @@ async function close({ uid, instantEventId }: { uid: string; instantEventId: str
   });
 }
 
+/** 메시지 작성 기간을 즉시 종료하는 옵션 */
+async function closeSendMessage({ uid, instantEventId }: { uid: string; instantEventId: string }) {
+  const memberRef = FirebaseAdmin.getInstance().Firestore.collection(MEMBER_COLLECTION).doc(uid);
+  const eventRef = FirebaseAdmin.getInstance()
+    .Firestore.collection(MEMBER_COLLECTION)
+    .doc(uid)
+    .collection(INSTANT_EVENT)
+    .doc(instantEventId);
+  await FirebaseAdmin.getInstance().Firestore.runTransaction(async (transaction) => {
+    const memberDoc = await transaction.get(memberRef);
+    const eventDoc = await transaction.get(eventRef);
+    // 존재하지 않는 사용자
+    if (memberDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 사용자 ☠️' });
+    }
+    if (eventDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 이벤트 ☠️' });
+    }
+    // 마감날짜를 현재를 기준으로 입력해서 종료해버린다.
+    const now = moment();
+    await transaction.update(eventRef, { endDate: now.toISOString() });
+  });
+}
+
 /** instant 이벤트에 질문 등록 */
 async function post({ uid, instantEventId, message }: { uid: string; instantEventId: string; message: string }) {
   const memberRef = FirebaseAdmin.getInstance().Firestore.collection(MEMBER_COLLECTION).doc(uid);
@@ -230,6 +254,7 @@ async function messageList({
         id: mv.id,
         voter: [],
         voted,
+        message: docData.deny !== undefined && docData.deny === true ? '비공개 처리된 메시지입니다.' : docData.message,
         createAt: docData.createAt.toDate().toISOString(),
         updateAt: docData.updateAt ? docData.updateAt.toDate().toISOString() : undefined,
       } as InInstantEventMessage;
@@ -286,11 +311,47 @@ async function messageInfo({
   return {
     ...resp,
     voted,
+    message: resp.deny !== undefined && resp.deny === true ? '비공개 처리된 메시지입니다.' : resp.message,
     id: messageId,
     voter: [],
     createAt: resp.createAt.toDate().toISOString(),
     updateAt: resp.updateAt ? resp.updateAt.toDate().toISOString() : undefined,
   };
+}
+
+/** 특정 메시지를 deny 한다 */
+async function denyMessage({
+  uid,
+  instantEventId,
+  messageId,
+}: {
+  uid: string;
+  instantEventId: string;
+  messageId: string;
+}): Promise<void> {
+  const memberRef = FirebaseAdmin.getInstance().Firestore.collection(MEMBER_COLLECTION).doc(uid);
+  const eventRef = FirebaseAdmin.getInstance()
+    .Firestore.collection(MEMBER_COLLECTION)
+    .doc(uid)
+    .collection(INSTANT_EVENT)
+    .doc(instantEventId);
+  const messageRef = eventRef.collection(INSTANT_MESSAGE).doc(messageId);
+  await FirebaseAdmin.getInstance().Firestore.runTransaction(async (transaction) => {
+    const memberDoc = await transaction.get(memberRef);
+    const eventDoc = await transaction.get(eventRef);
+    const messageDoc = await transaction.get(messageRef);
+    // 존재하지 않는 사용자
+    if (memberDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 사용자' });
+    }
+    if (eventDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 이벤트' });
+    }
+    if (messageDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 메시지' });
+    }
+    await transaction.update(messageRef, { deny: true });
+  });
 }
 
 async function voteMessage({
@@ -423,6 +484,8 @@ const InstantMessageModel = {
   get,
   messageList,
   messageInfo,
+  closeSendMessage,
+  denyMessage,
   voteMessage,
   postReply,
 };
