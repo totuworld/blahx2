@@ -1,5 +1,5 @@
 import { GetServerSideProps, NextPage } from 'next';
-import { Avatar, Box, Button, Flex, Textarea, useToast, VStack } from '@chakra-ui/react';
+import { Avatar, Box, Button, Flex, Spacer, Textarea, useToast, VStack } from '@chakra-ui/react';
 import { ChevronLeftIcon } from '@chakra-ui/icons';
 import Link from 'next/link';
 import ResizeTextarea from 'react-textarea-autosize';
@@ -19,6 +19,7 @@ import InstantInfo from '@/features/instant_message/header/instant_info.componen
 import FirebaseAuthClient from '@/models/auth/firebase_auth_client';
 import { useAuth } from '@/contexts/auth_user.context';
 import InstantMessageItem from '@/features/instant_message/message_item/instant_message_item.component';
+import InstantEventHeaderSideMenu from '@/features/instant_message/header/side_menu.component';
 
 interface Props {
   host: string;
@@ -121,6 +122,8 @@ const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEvent
     return <p>사용자를 찾을 수 없습니다.</p>;
   }
 
+  const isOwner = authUser !== null && authUser.uid === userInfo.uid;
+
   return (
     <ServiceLayout height="100vh" backgroundColor="gray.200">
       <Box maxW="md" mx="auto" pt="6">
@@ -131,22 +134,30 @@ const InstantEventHomePage: NextPage<Props> = function ({ userInfo, instantEvent
             </Button>
           </a>
         </Link>
-        <Box borderWidth="1px" borderRadius="lg" bg="white" p="6">
-          <InstantInfo
-            userInfo={userInfo}
-            instantEventInfo={instantEventInfo}
-            eventState={eventState}
-            onCompleteLockOrClose={() => {
-              InstantMessageClientService.get({
-                uid: userInfo.uid,
-                instantEventId: instantEventInfo.instantEventId,
-              }).then((resp) => {
-                if (resp.status === 200 && resp.payload) {
-                  setInstantEventInfo(resp.payload);
-                }
-              });
-            }}
-          />
+        <Box rounded="md" overflow="hidden" bg="white">
+          {isOwner && (
+            <Box width="full" float="left" height="0">
+              <Flex pr="2" pt="2">
+                <Spacer />
+                <InstantEventHeaderSideMenu
+                  userInfo={userInfo}
+                  instantEventInfo={instantEventInfo}
+                  eventState={eventState}
+                  onCompleteLockOrClose={() => {
+                    InstantMessageClientService.get({
+                      uid: userInfo.uid,
+                      instantEventId: instantEventInfo.instantEventId,
+                    }).then((resp) => {
+                      if (resp.status === 200 && resp.payload) {
+                        setInstantEventInfo(resp.payload);
+                      }
+                    });
+                  }}
+                />
+              </Flex>
+            </Box>
+          )}
+          <InstantInfo userInfo={userInfo} instantEventInfo={instantEventInfo} eventState={eventState} />
         </Box>
         {eventState === 'question' && (
           <Box borderWidth="1px" borderRadius="lg" p="2" overflow="hidden" bg="white" mt="6">

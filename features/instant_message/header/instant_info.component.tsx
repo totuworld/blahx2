@@ -1,7 +1,5 @@
-import { Avatar, Center, Flex, Spacer, Text } from '@chakra-ui/react';
+import { Avatar, Box, Center, Flex, Image, Text } from '@chakra-ui/react';
 import moment from 'moment';
-import { useAuth } from '@/contexts/auth_user.context';
-import InstantEventHeaderSideMenu from './side_menu.component';
 import { InMemberInfo } from '@/models/member/in_member_info';
 import { InInstantEvent } from '@/models/instant_message/interface/in_instant_event';
 
@@ -9,27 +7,19 @@ interface Props {
   userInfo: InMemberInfo;
   instantEventInfo: InInstantEvent;
   eventState: 'none' | 'locked' | 'closed' | 'question' | 'reply' | 'pre';
-  onCompleteLockOrClose: () => void;
 }
 
-const InstantInfo = function ({ userInfo, instantEventInfo, eventState, onCompleteLockOrClose }: Props) {
-  const { authUser } = useAuth();
+const InstantInfo = function ({ userInfo, instantEventInfo, eventState }: Props) {
   const endDate = moment(instantEventInfo.endDate, moment.ISO_8601);
-  const isOwner = authUser !== null && authUser.uid === userInfo.uid;
   return (
     <>
-      {isOwner && (
-        <Flex>
-          <Spacer />
-          <InstantEventHeaderSideMenu
-            userInfo={userInfo}
-            instantEventInfo={instantEventInfo}
-            eventState={eventState}
-            onCompleteLockOrClose={onCompleteLockOrClose}
-          />
-        </Flex>
-      )}
-      <Flex justify="center" mt={isOwner ? -20 : -14}>
+      <Image
+        h="120px"
+        w="full"
+        src="https://images.unsplash.com/photo-1590372648787-fa5a935c2c40?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=640&q=80"
+        objectFit="cover"
+      />
+      <Flex justify="center" mt={-8}>
         <Avatar
           size="lg"
           src={userInfo.photoURL?.replace('_normal', '')}
@@ -38,19 +28,21 @@ const InstantInfo = function ({ userInfo, instantEventInfo, eventState, onComple
           }}
         />
       </Flex>
-      <Text fontSize="md">{instantEventInfo?.title}</Text>
-      <Text fontSize="xs">{instantEventInfo?.desc}</Text>
-      {eventState === 'question' && <Text fontSize="xs">{endDate.format('YYYY-MM-DD hh:mm')}까지 질문 가능</Text>}
-      {eventState === 'locked' && (
-        <Center width="full" fontSize="xs">
-          🚨 더 이상 댓글을 달 수 없는 상태입니다 🚨
-        </Center>
-      )}
-      {eventState === 'closed' && (
-        <Center width="full" fontSize="xs">
-          🚨 종료된 이벤트 입니다 🚨
-        </Center>
-      )}
+      <Box px="2" pb="2">
+        <Text fontSize="md">{instantEventInfo?.title}</Text>
+        <Text fontSize="xs">{instantEventInfo?.desc}</Text>
+        {eventState === 'question' && <Text fontSize="xs">{endDate.format('YYYY-MM-DD hh:mm')}까지 질문 가능</Text>}
+        {eventState === 'locked' && (
+          <Center width="full" fontSize="xs">
+            🚨 더 이상 댓글을 달 수 없는 상태입니다 🚨
+          </Center>
+        )}
+        {eventState === 'closed' && (
+          <Center width="full" fontSize="xs">
+            🚨 종료된 이벤트 입니다 🚨
+          </Center>
+        )}
+      </Box>
     </>
   );
 };
