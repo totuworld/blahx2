@@ -148,7 +148,7 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
         <meta name="twitter:url" content={mainUrl} />
         <meta name="twitter:domain" content={publicRuntimeConfig.mainDomain} />
       </Head>
-      <ServiceLayout backgroundColor="gray.200">
+      <ServiceLayout backgroundColor="gray.200" minHeight="100vh">
         <Box maxW="md" mx="auto" pt="6">
           <Box borderWidth="1px" borderRadius="lg" overflow="hidden" mb="2" bg="white">
             <Box display="flex" p="6">
@@ -242,7 +242,7 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
             <Box mt="6">
               <img style={{ width: '50%', margin: '0 auto' }} src="/blahx2.svg" alt="hero" />
               <Flex justify="center">
-                <Box mb="6" height="100vh" fontSize="xs">
+                <Box mb="6" fontSize="xs">
                   첫 질문을 남겨보세요
                 </Box>
               </Flex>
