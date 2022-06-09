@@ -47,6 +47,7 @@ async function postReplay({
   messageId,
   reply,
   replayAuthor,
+  token,
 }: {
   uid: string;
   messageId: string;
@@ -55,6 +56,7 @@ async function postReplay({
     displayName: string;
     photoURL?: string;
   };
+  token: string;
 }): Promise<Resp<unknown>> {
   const url = `/api/messages.add.reply/${uid}/${messageId}`;
   try {
@@ -72,6 +74,9 @@ async function postReplay({
       option: {
         url,
         method: 'POST',
+        headers: {
+          authorization: token,
+        },
         data: sendData,
       },
     });

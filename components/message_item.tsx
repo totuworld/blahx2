@@ -1,4 +1,19 @@
-import { Avatar, Box, Button, Divider, Flex, Spacer, Text, Textarea } from '@chakra-ui/react';
+import {
+  Avatar,
+  Box,
+  Button,
+  Divider,
+  Flex,
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
+  Spacer,
+  Text,
+  Textarea,
+  useToast,
+} from '@chakra-ui/react';
 import { useState } from 'react';
 import ResizeTextarea from 'react-textarea-autosize';
 import { FaTwitter } from 'react-icons/fa';
@@ -6,6 +21,8 @@ import getConfig from 'next/config';
 import { InMessage } from '@/models/message/in_message';
 import MessageClientService from '@/controllers/message/message.client.service';
 import convertDateToString from '@/utils/convert_date_to_string';
+import MoreBtnIcon from './more_btn_icon';
+import FirebaseAuthClient from '@/models/auth/firebase_auth_client';
 
 interface Props {
   uid: string;
@@ -19,8 +36,59 @@ interface Props {
 
 const MessageItem = function ({ uid, photoURL, displayName, isOwner, item, onSendComplete, screenName }: Props) {
   const { publicRuntimeConfig } = getConfig();
-  const [message, updateMessage] = useState('');
+  const [message, setMessage] = useState('');
+  const toast = useToast();
   const mainUrl = `https://${publicRuntimeConfig.mainDomain}`;
+  const isDeny = item.deny !== undefined ? item.deny === true : false;
+  async function updateMessage({ deny }: { deny: boolean }) {
+    try {
+      const token = await FirebaseAuthClient.getInstance().Auth.currentUser?.getIdToken();
+      if (token === undefined) {
+        toast({
+          title: '로그인한 사용자만 사용할 수 있는 메뉴입니다.',
+        });
+        return;
+      }
+      const resp = await fetch('/api/messages.deny', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', authorization: token },
+        body: JSON.stringify({
+          uid,
+          messageId: item.id,
+          deny,
+        }),
+      });
+      if (resp.status < 300) {
+        onSendComplete();
+      }
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: '로그인한 사용자만 사용할 수 있는 메뉴입니다.',
+      });
+    }
+  }
+
+  async function postReply() {
+    try {
+      const token = await FirebaseAuthClient.getInstance().Auth.currentUser?.getIdToken();
+      if (token === undefined) {
+        toast({
+          title: '로그인한 사용자만 사용할 수 있는 메뉴입니다.',
+        });
+        return;
+      }
+      const resp = await MessageClientService.postReplay({ uid, messageId: item.id, reply: message, token });
+      if (resp.status < 300) {
+        onSendComplete();
+      }
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: '로그인한 사용자만 사용할 수 있는 메뉴입니다.',
+      });
+    }
+  }
   return (
     <Box borderRadius="md" width="full" bg="white" boxShadow="md">
       <Box>
@@ -35,6 +103,29 @@ const MessageItem = function ({ uid, photoURL, displayName, isOwner, item, onSen
           <Text whiteSpace="pre-line" fontSize="xx-small" color="gray.500" ml="1">
             {convertDateToString(item.createAt)}
           </Text>
+          <Spacer />
+          {isOwner && (
+            <Menu>
+              <MenuButton
+                as={IconButton}
+                icon={<MoreBtnIcon />}
+                width="24px"
+                height="24px"
+                borderRadius="full"
+                variant="link"
+                size="xs"
+              />
+              <MenuList>
+                <MenuItem
+                  onClick={() => {
+                    updateMessage({ deny: item.deny !== undefined ? !item.deny : true });
+                  }}
+                >
+                  {isDeny ? '비공개 처리 해제' : '비공개 처리'}
+                </MenuItem>
+              </MenuList>
+            </Menu>
+          )}
         </Flex>
       </Box>
       <Box p="2">
@@ -97,7 +188,7 @@ const MessageItem = function ({ uid, photoURL, displayName, isOwner, item, onSen
                   placeholder="댓글을 입력하세요..."
                   value={message}
                   onChange={(e) => {
-                    updateMessage(e.target.value);
+                    setMessage(e.target.value);
                   }}
                 />
               </Box>
@@ -109,9 +200,7 @@ const MessageItem = function ({ uid, photoURL, displayName, isOwner, item, onSen
                 size="sm"
                 // borderRadius="full"
                 onClick={() => {
-                  MessageClientService.postReplay({ uid, messageId: item.id, reply: message }).then(() => {
-                    onSendComplete();
-                  });
+                  postReply();
                 }}
               >
                 등록

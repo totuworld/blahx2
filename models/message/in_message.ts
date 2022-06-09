@@ -12,6 +12,8 @@ export interface InMessage {
   reply?: string;
   createAt: string;
   updateAt?: string;
+  /** 비공개 처리 여부 */
+  deny?: boolean;
 }
 
 export interface InMessageServer {
@@ -23,6 +25,8 @@ export interface InMessageServer {
     displayName: string;
     photoURL?: string;
   };
+  /** 비공개 처리 여부 */
+  deny?: boolean;
   reply?: string;
   createAt: firestore.Timestamp;
   updateAt?: firestore.Timestamp;
