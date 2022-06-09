@@ -10,7 +10,6 @@ import JSCGetMessageReq from './JSONSchema/JSCGetMessageReq';
 import { PostReplyMessageReq } from './interface/PostReplyMessageReq';
 import JSCPostReplyMessageReq from './JSONSchema/JSCPostReplyMessageReq';
 import CustomServerError from '../custom_error/custom_server_error';
-import FirebaseAdmin from '@/models/firebase_admin';
 import { DenyMessageReq } from './interface/DenyMessageReq';
 import JSCDenyMessageReq from './JSONSchema/JSCDenyMessageReq';
 import verifyFirebaseIdToken from '@/utils/verify_firebase_id_token';
