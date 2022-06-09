@@ -4,12 +4,13 @@ import FirebaseAuthClient from '@/models/auth/firebase_auth_client';
 import { InAuthUser } from './interface/in_auth_user';
 import { memberAddForClient } from '@/models/member/member.client.service';
 
-function formatAuthUser(user: User): InAuthUser {
+function formatAuthUser(user: User & { reloadUserInfo?: { screenName: string } }): InAuthUser {
   return {
     uid: user.uid,
     email: user.email,
     photoURL: user.photoURL,
     displayName: user.displayName,
+    screenName: user.reloadUserInfo?.screenName ?? null,
   };
 }
 
