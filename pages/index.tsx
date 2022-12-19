@@ -7,8 +7,8 @@ import { useAuth } from '@/contexts/auth_ser.context';
 const IndexPage: NextPage = function () {
   const { signInWithGoogle } = useAuth();
   return (
-    <ServiceLayout title="test">
-      <Box maxW="md" mx="auto">
+    <ServiceLayout title="test" backgroundColor="gray.50" minH="100vh">
+      <Box maxW="md" mx="auto" pt="10">
         <img src="./logo.svg" alt="메인 로고" />
         <Flex justify="center">
           <Heading>#Blah Blah</Heading>
