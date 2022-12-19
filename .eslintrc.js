@@ -1,4 +1,5 @@
 module.exports = {
+  ignorePatterns: ['.eslintrc.js'],
   parser: '@typescript-eslint/parser', // Specifies the ESLint parser
   extends: [
     'airbnb',
@@ -89,12 +90,22 @@ module.exports = {
         avoidEscape: true,
       },
     ],
+    // react 함수형 컴포넌트 정의 방식 선언
+    //'react/function-component-definition': [2, { namedcomponents: 'arrow-function' }],
+
+    // 프리티어 설정 추가 CRLF -> LF
     'prettier/prettier': 'error',
     'jsx-a11y/href-no-hash': 'off',
     'jsx-a11y/anchor-is-valid': [
       'warn',
       {
         aspects: ['invalidHref'],
+      },
+    ],
+    'prettier/prettier': [
+      'error',
+      {
+        endOfLine: 'auto',
       },
     ],
   },

@@ -9,10 +9,7 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "jsx": "preserve",
-    "lib": [
-      "dom",
-      "es2017"
-    ],
+    "lib": ["dom", "es2017"],
     "module": "esnext",
     "moduleResolution": "node",
     "noEmit": true,
@@ -20,9 +17,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "paths": {
-      "@/*": [
-        "*"
-      ]
+      "@/*": ["*"]
     },
     "resolveJsonModule": true,
     "skipLibCheck": true,
@@ -30,15 +25,6 @@
     "target": "es5",
     "incremental": true
   },
-  "exclude": [
-    "node_modules",
-    "next.config.js",
-    "shorturl.js",
-    "sentry.js",
-    "injectEnv.js"
-  ],
-  "include": [
-    "**/*.ts",
-    "**/*.tsx"
-  ]
+  "exclude": ["node_modules", "next.config.js", "shorturl.js", "sentry.js", "injectEnv.js"],
+  "include": ["**/*.ts", "**/*.tsx"]
 }
